@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import SideBar from "../components/SideBar.jsx";
 
-import Navbar from "../components/Navbar";
+import NavBar from "../components/NavBar.jsx";
 
 export default function DashboardLayout() {
   return (
@@ -10,7 +10,7 @@ export default function DashboardLayout() {
       <SideBar />
 
       <div className="flex flex-col flex-1">
-        <Navbar />
+        <NavBar />
         <main className="p-6">
           <Outlet />
         </main>
