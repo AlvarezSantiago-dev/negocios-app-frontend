@@ -1,0 +1,174 @@
+/* ========== INFORMES PAGE ========== */
+.informes-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.info-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border-left: 4px solid #63b0cd;
+}
+
+.info-card h3 {
+  margin: 0 0 10px;
+  color: #666;
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.info-card .amount {
+  font-size: 2em;
+  color: #63b0cd;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* ========== TABS ========== */
+.tabs-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+
+.tab-link {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  color: #666;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 1em;
+  position: relative;
+  transition: color 0.3s;
+}
+
+.tab-link:hover {
+  color: #63b0cd;
+}
+
+.tab-link.active {
+  color: #63b0cd;
+  border-bottom: 3px solid #63b0cd;
+  margin-bottom: -2px;
+}
+
+/* ========== TAB SECTION ========== */
+.tab-section {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-section h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.4em;
+}
+
+/* ========== TABLES ========== */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.report-table thead {
+  background: #f5f5f5;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.report-table th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95em;
+}
+
+.report-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.95em;
+}
+
+.report-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.report-table .total {
+  font-weight: bold;
+  color: #63b0cd;
+}
+
+/* ========== BUTTON ========== */
+.btn-actualizar {
+  background: #63b0cd;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
+  transition: background 0.3s;
+  margin-top: 20px;
+}
+
+.btn-actualizar:hover {
+  background: #4a90b0;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .informes-container {
+    padding: 15px;
+  }
+
+  .info-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .tabs-bar {
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+
+  .tab-link {
+    padding: 10px 15px;
+    font-size: 0.9em;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 10px 8px;
+    font-size: 0.9em;
+  }
+}
