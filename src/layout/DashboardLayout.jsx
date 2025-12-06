@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../components/SideBar.jsx";
+
 import Navbar from "../components/Navbar";
 
 export default function DashboardLayout() {
