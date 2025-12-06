@@ -19,7 +19,7 @@ export function DashboardProvider({ children }) {
       const [prodRes, ventasRes, resumenRes] = await Promise.all([
         fetch(`${API}/products`).then((r) => r.json()),
         fetch(`${API}/ventas`).then((r) => r.json()),
-        fetch(`${API}/dashboard/resumen`).then((r) => r.json()),
+        fetch(`${API}/resumen`).then((r) => r.json()),
       ]);
 
       setProductos(prodRes.response);
