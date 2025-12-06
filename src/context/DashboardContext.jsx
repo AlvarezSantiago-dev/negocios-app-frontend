@@ -1,5 +1,6 @@
 // src/context/DashboardContext.jsx
 import { createContext, useContext, useState, useEffect } from "react";
+const API = import.meta.env.VITE_API_URL;
 
 const DashboardContext = createContext();
 
