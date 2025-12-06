@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { logoutService } from "../services/sessionsService";
 import useAuthStore from "../store/authStore";
 
-export default function Navbar() {
+export default function NavBar() {
   const logout = useAuthStore((s) => s.logout);
 
   const handleLogout = async () => {
