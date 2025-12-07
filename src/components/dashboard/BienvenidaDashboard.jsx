@@ -24,31 +24,46 @@ export default function BienvenidaDashboard({ fechaActual }) {
     fetchCaja();
   }, []);
 
-  // Determinar estado del botón y mensaje según el resumen
+  // 🔹 Determinar estado de caja y botón
   const estadoCaja = () => {
     if (resumen?.abierta)
       return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
+
     if (resumen?.aperturaHoy && resumen?.cierreHoy)
       return { color: "red", texto: "Cerrada ✅ (cerrada hoy)", boton: null };
+
     if (!resumen?.abierta && resumen?.aperturaHoy && !resumen?.cierreHoy)
       return {
         color: "yellow",
         texto: "Cerrada ⚠ (pendiente cierre)",
         boton: "Cerrar Caja",
       };
+
     return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
   };
 
   const { color, texto, boton } = estadoCaja();
 
+  // 🔹 Manejar apertura de caja
   const handleApertura = async (montos) => {
-    await abrirCaja(montos);
-    setModalApertura(false);
+    try {
+      await abrirCaja(montos);
+      setModalApertura(false);
+      await fetchCaja(); // refrescar estado
+    } catch (err) {
+      console.error("Error abrir caja:", err);
+    }
   };
 
+  // 🔹 Manejar cierre de caja
   const handleCierre = async (montos) => {
-    await cerrarCaja(montos);
-    setModalCierre(false);
+    try {
+      await cerrarCaja(montos);
+      setModalCierre(false);
+      await fetchCaja(); // refrescar estado
+    } catch (err) {
+      console.error("Error cerrar caja:", err);
+    }
   };
 
   return (
@@ -96,6 +111,7 @@ export default function BienvenidaDashboard({ fechaActual }) {
             </span>
           </span>
 
+          {/* Botón dinámico */}
           {boton && (
             <button
               onClick={() =>
@@ -120,6 +136,7 @@ export default function BienvenidaDashboard({ fechaActual }) {
         </div>
       </motion.div>
 
+      {/* Modales */}
       <AperturaModal
         open={modalApertura}
         onClose={() => setModalApertura(false)}
