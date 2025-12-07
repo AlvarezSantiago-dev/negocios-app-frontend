@@ -1,5 +1,4 @@
-// src/components/dashboard/BienvenidaDashboard.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Wallet, CalendarDays } from "lucide-react";
 import useCajaStore from "../../store/useCajaStore";
@@ -8,7 +7,7 @@ import { CierreModal } from "@/components/CierreModal";
 
 export default function BienvenidaDashboard({ fechaActual }) {
   const {
-    resumen,
+    resumen = {},
     abrirCaja,
     cerrarCaja,
     fetchCaja,
@@ -20,11 +19,13 @@ export default function BienvenidaDashboard({ fechaActual }) {
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
 
+  // 🔹 Siempre cargar el estado de la caja al montar
   useEffect(() => {
-    fetchCaja();
-  }, []);
+    if (fetchCaja) fetchCaja();
+  }, [fetchCaja]);
 
-  const estadoCaja = () => {
+  // 🔹 Calculamos estado de caja basado en resumen actualizado
+  const estadoCaja = useMemo(() => {
     if (resumen?.abierta)
       return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
 
@@ -39,15 +40,15 @@ export default function BienvenidaDashboard({ fechaActual }) {
       };
 
     return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
-  };
+  }, [resumen]);
 
-  const { color, texto, boton } = estadoCaja();
+  const { color, texto, boton } = estadoCaja;
 
+  // 🔹 Handlers simplificados: ya llaman a fetchCaja internamente
   const handleApertura = async (montos) => {
     try {
       await abrirCaja(montos);
       setModalApertura(false);
-      await fetchCaja();
     } catch (err) {
       console.error("Error abrir caja:", err);
     }
@@ -57,7 +58,6 @@ export default function BienvenidaDashboard({ fechaActual }) {
     try {
       await cerrarCaja(montos);
       setModalCierre(false);
-      await fetchCaja();
     } catch (err) {
       console.error("Error cerrar caja:", err);
     }
