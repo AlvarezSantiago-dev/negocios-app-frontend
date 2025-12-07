@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import useDashboardStore from "../store/useDasboardStore";
+import useDashboardStore from "../store/useDashboardStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
 import AccesosRapidos from "../components/dashboard/AccesosRapidos";
@@ -26,7 +26,6 @@ export default function Dashboard() {
     fetchDashboard,
   } = useDashboardStore();
 
-  // 🔹 Traemos datos al cargar
   useEffect(() => {
     fetchDashboard();
   }, []);
@@ -44,15 +43,10 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-10 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
-      {/* Bienvenida */}
       <motion.div>
-        <BienvenidaDashboard
-          fechaActual={fechaActual}
-          onRefresh={fetchDashboard}
-        />
+        <BienvenidaDashboard fechaActual={fechaActual} />
       </motion.div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPI
           title="Vendido hoy"
@@ -76,14 +70,12 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Stock Bajo Alert */}
       {hayStockBajo && (
         <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-xl flex items-center gap-3 shadow-md">
           <AlertTriangle /> Hay productos con stock bajo
         </div>
       )}
 
-      {/* Resumen de caja */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -101,7 +93,6 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Movimientos + Accesos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <MovimientosTable data={movimientos} />
@@ -111,18 +102,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stock crítico */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <StockCriticoCard productos={stockCritico} />
         </div>
-        <div></div>
       </div>
     </div>
   );
 }
 
-/* SUB-COMPONENTES PEQUEÑOS */
 function KPI({ title, icon, value }) {
   return (
     <motion.div

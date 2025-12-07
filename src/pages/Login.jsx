@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { motion } from "framer-motion";
+import Swal from "sweetalert2";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -19,37 +20,56 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/sessions/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/sessions/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-    const loginData = await res.json();
-    if (loginData.statusCode !== 200) {
-      alert("Credenciales inválidas");
-      setLoading(false);
-      return;
-    }
-
-    const res2 = await fetch(
-      `${import.meta.env.VITE_API_URL}/sessions/online`,
-      {
-        method: "GET",
-        credentials: "include",
+      const loginData = await res.json();
+      if (loginData.statusCode !== 200) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Credenciales inválidas",
+        });
+        setLoading(false);
+        return;
       }
-    );
 
-    const userData = await res2.json();
-    if (!userData?.user) {
-      alert("Error obteniendo usuario");
+      const res2 = await fetch(
+        `${import.meta.env.VITE_API_URL}/sessions/online`,
+        { method: "GET", credentials: "include" }
+      );
+      const userData = await res2.json();
+
+      if (!userData?.user) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo obtener usuario",
+        });
+        setLoading(false);
+        return;
+      }
+
+      loginStore(userData.user);
+      navigate("/");
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo iniciar sesión",
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    loginStore(userData.user);
-    navigate("/");
   };
 
   return (
@@ -78,16 +98,16 @@ export default function Login() {
                 <Input
                   type="email"
                   placeholder="tuemail@ejemplo.com"
-                  className="mt-1"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="mt-1"
                 />
               </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  password
+                  Password
                 </label>
                 <div className="relative mt-1">
                   <Input
@@ -111,6 +131,16 @@ export default function Login() {
                 {loading ? "Ingresando..." : "Entrar"}
               </Button>
             </form>
+
+            <p className="text-sm text-center text-gray-600 mt-4">
+              ¿No tenés cuenta?{" "}
+              <button
+                className="text-blue-600 underline"
+                onClick={() => navigate("/register")}
+              >
+                Crear cuenta
+              </button>
+            </p>
           </CardContent>
         </Card>
       </motion.div>

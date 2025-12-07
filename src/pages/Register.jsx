@@ -4,14 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function Register() {
-  const [form, setForm] = useState({
-    nombre: "",
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ nombre: "", email: "", password: "" });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -24,26 +20,45 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/sessions/register`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(form),
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/sessions/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(form),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.statusCode !== 200) {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: data.message || "Error registrando usuario",
+        });
+        setLoading(false);
+        return;
       }
-    );
 
-    const data = await res.json();
-
-    if (data.statusCode !== 200) {
-      alert(data.message || "Error registrando usuario");
+      Swal.fire({
+        icon: "success",
+        title: "Cuenta creada 🎉",
+        text: "Ahora podés iniciar sesión.",
+      });
+      navigate("/login");
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo registrar. Intenta nuevamente.",
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    alert("Cuenta creada con éxito 🎉");
-    navigate("/login");
   };
 
   return (
@@ -65,7 +80,6 @@ export default function Register() {
 
           <CardContent>
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
-              {/* Nombre */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Nombre
@@ -73,15 +87,14 @@ export default function Register() {
                 <Input
                   type="text"
                   placeholder="Tu nombre"
-                  className="mt-1"
                   name="nombre"
                   value={form.nombre}
                   onChange={handleChange}
                   required
+                  className="mt-1"
                 />
               </div>
 
-              {/* Email */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
                   Email
@@ -89,18 +102,17 @@ export default function Register() {
                 <Input
                   type="email"
                   placeholder="tuemail@ejemplo.com"
-                  className="mt-1"
                   name="email"
                   value={form.email}
                   onChange={handleChange}
                   required
+                  className="mt-1"
                 />
               </div>
 
-              {/* password */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  password
+                  Password
                 </label>
                 <div className="relative mt-1">
                   <Input
