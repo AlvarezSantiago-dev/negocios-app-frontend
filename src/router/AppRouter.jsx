@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardLayout from "../layout/DashboardLayout";
-import CajaNuevo from "../pages/CajaNuevo";
 import CajaPage from "../pages/CajaPage";
 import Dashboard from "../pages/Dashboard";
 import CierresPage from "../pages/HistorialCierres";
@@ -30,7 +29,6 @@ export default function AppRouter() {
         <Route path="productos" element={<Productos />} />
         <Route path="informes" element={<Informes />} />
         <Route path="caja" element={<CajaPage />} />
-        <Route path="caja/nuevo" element={<CajaNuevo />} />
         <Route path="cierres" element={<CierresPage />} />
       </Route>
 
