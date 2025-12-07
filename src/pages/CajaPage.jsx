@@ -29,7 +29,7 @@ function CajaKPI({ label, value, icon, color, tooltip }) {
       <div className="flex justify-between items-center text-gray-700">
         <span className="flex items-center gap-1 font-medium">
           {icon} {label}
-          {tooltip && (
+          {tooltip && Tooltip && TooltipTrigger && TooltipContent && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Info className="w-4 h-4 text-gray-400 cursor-pointer" />
@@ -39,7 +39,7 @@ function CajaKPI({ label, value, icon, color, tooltip }) {
           )}
         </span>
         <span className="text-2xl font-bold" style={{ color }}>
-          {value}
+          {value || "$0"}
         </span>
       </div>
     </motion.div>
@@ -48,17 +48,17 @@ function CajaKPI({ label, value, icon, color, tooltip }) {
 
 export default function CajaPage() {
   const {
-    resumen,
-    movimientos,
+    resumen = {},
+    movimientos = [],
     fetchCaja,
     crearMovimiento,
     editarMovimiento,
     eliminarMovimiento,
     abrirCaja,
     cerrarCaja,
-    loading,
-    loadingCierre,
-    cerrando,
+    loading = false,
+    loadingCierre = false,
+    cerrando = false,
     cierreHoy,
     fetchCierreData,
   } = useCajaStore();
@@ -69,13 +69,14 @@ export default function CajaPage() {
   const [modalCierre, setModalCierre] = useState(false);
 
   useEffect(() => {
-    fetchCaja();
-    fetchCierreData();
-  }, []);
+    if (fetchCaja) fetchCaja();
+    if (fetchCierreData) fetchCierreData();
+  }, [fetchCaja, fetchCierreData]);
 
   const saveMovimiento = (data) => {
-    if (editing) editarMovimiento(editing._id, data);
-    else crearMovimiento(data);
+    if (!data) return;
+    if (editing && editarMovimiento) editarMovimiento(editing._id, data);
+    else if (crearMovimiento) crearMovimiento(data);
     setEditing(null);
   };
 
@@ -94,28 +95,28 @@ export default function CajaPage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
           <CajaKPI
             label="Total Caja"
-            value={`$${formatMoney(resumen?.total)}`}
+            value={`$${formatMoney(resumen?.total || 0)}`}
             icon={<Wallet className="w-5 h-5 opacity-70" />}
             color="#1e40af"
             tooltip="Suma de efectivo, MP y transferencias."
           />
           <CajaKPI
             label="Efectivo"
-            value={`$${formatMoney(resumen?.efectivo)}`}
+            value={`$${formatMoney(resumen?.efectivo || 0)}`}
             icon={<DollarSign className="w-5 h-5 opacity-70" />}
             color="#065f46"
             tooltip="Dinero físico en caja."
           />
           <CajaKPI
             label="Mercado Pago"
-            value={`$${formatMoney(resumen?.mp)}`}
+            value={`$${formatMoney(resumen?.mp || 0)}`}
             icon={<Smartphone className="w-5 h-5 opacity-70" />}
             color="#0c4a6e"
             tooltip="Ventas recibidas por Mercado Pago."
           />
           <CajaKPI
             label="Transferencia"
-            value={`$${formatMoney(resumen?.transferencia)}`}
+            value={`$${formatMoney(resumen?.transferencia || 0)}`}
             icon={<Smartphone className="w-5 h-5 opacity-70" />}
             color="#854d0e"
             tooltip="Ventas recibidas por transferencias bancarias."
@@ -154,7 +155,7 @@ export default function CajaPage() {
 
           <Button
             variant="outline"
-            onClick={fetchCaja}
+            onClick={() => fetchCaja && fetchCaja()}
             className="flex gap-2 items-center"
           >
             <RefreshCcw className="w-4 h-4" /> Refrescar
@@ -163,12 +164,13 @@ export default function CajaPage() {
 
         {/* Movimientos */}
         <MovimientosTable
-          data={movimientos}
+          data={movimientos || []}
           onEdit={(m) => {
+            if (!m) return;
             setEditing(m);
             setModalMov(true);
           }}
-          onDelete={eliminarMovimiento}
+          onDelete={(id) => eliminarMovimiento?.(id)}
         />
 
         {/* Cierre del día */}
@@ -184,10 +186,10 @@ export default function CajaPage() {
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="font-medium">
-                    Ventas: {cierreHoy.cantidadVentas}
+                    Ventas: {cierreHoy?.cantidadVentas || 0}
                   </div>
                   <div className="font-medium">
-                    Total: ${formatMoney(cierreHoy.total)}
+                    Total: ${formatMoney(cierreHoy?.total || 0)}
                   </div>
                 </div>
 
@@ -202,7 +204,7 @@ export default function CajaPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {cierreHoy.ventas?.map((v) => (
+                    {(cierreHoy?.ventas || []).map((v) => (
                       <tr key={v.idVenta} className="border-t">
                         <td className="p-2">
                           {new Date(v.hora).toLocaleTimeString()}
@@ -210,7 +212,7 @@ export default function CajaPage() {
                         <td className="p-2 capitalize">{v.metodo}</td>
                         <td className="p-2">${formatMoney(v.total)}</td>
                         <td className="p-2">
-                          {v.productos?.map((p) => (
+                          {(v.productos || []).map((p) => (
                             <div key={p.id}>
                               {p.cantidad}x {p.nombre} - $
                               {formatMoney(p.precio)}
@@ -229,7 +231,7 @@ export default function CajaPage() {
         {/* Modales */}
         <MovimientoFormModal
           open={modalMov}
-          initialData={editing}
+          initialData={editing || null}
           onClose={() => {
             setModalMov(false);
             setEditing(null);
@@ -241,7 +243,7 @@ export default function CajaPage() {
           open={modalApertura}
           onClose={() => setModalApertura(false)}
           onConfirm={async (montos) => {
-            await abrirCaja(montos);
+            if (abrirCaja) await abrirCaja(montos);
             setModalApertura(false);
           }}
         />
@@ -249,9 +251,9 @@ export default function CajaPage() {
         <CierreModal
           open={modalCierre}
           onClose={() => setModalCierre(false)}
-          resumen={resumen}
+          resumen={resumen || {}}
           onConfirm={async (montos) => {
-            await cerrarCaja(montos);
+            if (cerrarCaja) await cerrarCaja(montos);
             setModalCierre(false);
           }}
         />

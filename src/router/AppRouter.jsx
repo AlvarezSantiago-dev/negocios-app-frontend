@@ -1,17 +1,15 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "../pages/Login";
-import Register from "../pages/Register";
-import Dashboard from "../pages/Dashboard";
-import Ventas from "../pages/Ventas";
-import Productos from "../pages/Products";
-import Informes from "../pages/Informes";
+import { Navigate, Route, Routes } from "react-router-dom";
 import DashboardLayout from "../layout/DashboardLayout";
-import useAuthStore from "../store/authStore";
 import CajaNuevo from "../pages/CajaNuevo";
 import CajaPage from "../pages/CajaPage";
+import Dashboard from "../pages/Dashboard";
 import CierresPage from "../pages/HistorialCierres";
-import TestDashboard from "../pages/TestDashboard";
+import Informes from "../pages/Informes";
+import Login from "../pages/Login";
+import Productos from "../pages/Products";
+import Register from "../pages/Register";
+import Ventas from "../pages/Ventas";
+import useAuthStore from "../store/authStore";
 
 export default function AppRouter() {
   const isAuth = useAuthStore((s) => s.isAuth);
