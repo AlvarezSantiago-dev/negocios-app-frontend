@@ -1,21 +1,15 @@
 import { motion } from "framer-motion";
-import {
-  Wallet,
-  ShoppingCart,
-  XCircle,
-  Package,
-  BarChart2,
-} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Wallet, ShoppingCart, XCircle, Package } from "lucide-react";
 
 export default function AccesosRapidos() {
   const navigate = useNavigate();
 
   const accesos = [
-    { label: "Caja", icon: Wallet, to: "/caja" },
-    { label: "Generar Venta", icon: ShoppingCart, to: "/ventas" },
-    { label: "Gestionar productos", icon: Package, to: "/products" },
-    { label: "Movimientos", icon: BarChart2, to: "/caja" },
+    { label: "Abrir Caja", icon: Wallet, to: "/caja" },
+    { label: "Ventas", icon: ShoppingCart, to: "/ventas" },
+    { label: "Cerrar Caja", icon: XCircle, to: "/cierres" },
+    { label: "Productos", icon: Package, to: "/products" },
   ];
 
   return (
