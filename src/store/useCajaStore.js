@@ -37,7 +37,15 @@ export default function useCajaStore() {
     setLoading(true);
     try {
       const resResumen = await fetchCajaResumen();
-      setResumen(resResumen);
+      setResumen({
+        efectivo: resResumen.efectivo ?? 0,
+        mp: resResumen.mp ?? 0,
+        transferencia: resResumen.transferencia ?? 0,
+        total: resResumen.total ?? 0,
+        aperturaHoy: resResumen.aperturaHoy ?? false,
+        cierreHoy: resResumen.cierreHoy ?? false,
+        abierta: resResumen.abierta ?? false,
+      });
       const resMovs = await fetchCajaMovimientos();
       setMovimientos(resMovs);
     } catch (err) {
