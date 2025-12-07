@@ -22,10 +22,11 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
   const [form, setForm] = useState({ efectivo: "", mp: "", transferencia: "" });
   const [error, setError] = useState("");
 
-  // Reset form cada vez que se abre
   useEffect(() => {
-    if (open) setForm({ efectivo: "", mp: "", transferencia: "" });
-    if (open) setError("");
+    if (open) {
+      setForm({ efectivo: "", mp: "", transferencia: "" });
+      setError("");
+    }
   }, [open]);
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });

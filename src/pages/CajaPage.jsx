@@ -6,17 +6,15 @@ import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
-
 import { Wallet, DollarSign, Smartphone, RefreshCcw, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatMoney } from "../services/dashboardService";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 function CajaKPI({ label, value, icon, color, tooltip }) {
   return (
@@ -177,52 +175,13 @@ export default function CajaPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Card className="shadow-md border border-white/40 bg-white/70 backdrop-blur mt-4">
-              <CardHeader>
-                <CardTitle>Cierre de hoy</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="font-medium">
-                    Ventas: {cierreHoy.cantidadVentas}
-                  </div>
-                  <div className="font-medium">
-                    Total: ${formatMoney(cierreHoy.total)}
-                  </div>
-                </div>
-
-                <h3 className="mt-3 font-semibold">Detalle de ventas</h3>
-                <table className="w-full text-sm mt-2">
-                  <thead>
-                    <tr>
-                      <th className="p-2 text-left">Hora</th>
-                      <th className="p-2 text-left">Método</th>
-                      <th className="p-2 text-left">Total</th>
-                      <th className="p-2 text-left">Productos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cierreHoy.ventas?.map((v) => (
-                      <tr key={v.idVenta} className="border-t">
-                        <td className="p-2">
-                          {new Date(v.hora).toLocaleTimeString()}
-                        </td>
-                        <td className="p-2 capitalize">{v.metodo}</td>
-                        <td className="p-2">${formatMoney(v.total)}</td>
-                        <td className="p-2">
-                          {v.productos?.map((p) => (
-                            <div key={p.id}>
-                              {p.cantidad}x {p.nombre} - $
-                              {formatMoney(p.precio)}
-                            </div>
-                          ))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+            <div className="bg-white/70 shadow-md border border-white/40 rounded-xl p-4 mt-4">
+              <h3 className="font-semibold mb-2">Cierre de hoy</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>Cantidad Ventas: {cierreHoy.cantidadVentas}</div>
+                <div>Total: ${formatMoney(cierreHoy.total)}</div>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -241,7 +200,7 @@ export default function CajaPage() {
           open={modalApertura}
           onClose={() => setModalApertura(false)}
           onConfirm={async (montos) => {
-            await abrirCaja(montos); // ⚡ refresca resumen y movimientos
+            await abrirCaja(montos);
             setModalApertura(false);
           }}
         />
@@ -250,8 +209,8 @@ export default function CajaPage() {
           open={modalCierre}
           onClose={() => setModalCierre(false)}
           resumen={resumen}
-          onConfirm={async () => {
-            await cerrarCaja(); // ⚡ refresca resumen y movimientos
+          onConfirm={async (montos) => {
+            await cerrarCaja(montos); // ahora recibe el objeto correctamente
             setModalCierre(false);
           }}
         />
