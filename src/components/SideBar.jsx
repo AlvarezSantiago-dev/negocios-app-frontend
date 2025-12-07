@@ -28,14 +28,14 @@ export default function Sidebar() {
 
   return (
     <motion.aside
-      className="h-full border-r shadow-sm bg-white"
+      className="min-h-screen border-r shadow-sm bg-white flex flex-col"
       initial={{ width: 240 }}
       animate={{ width: collapsed ? 70 : 240 }}
       transition={{ duration: 0.25, ease: "easeInOut" }}
       role="navigation"
       aria-label="Barra lateral principal"
     >
-      <Card className="h-full rounded-none border-none p-3 flex flex-col">
+      <Card className="flex-1 p-3 flex flex-col overflow-auto rounded-none border-none">
         {/* HEADER */}
         <div className="relative mb-4">
           <Button

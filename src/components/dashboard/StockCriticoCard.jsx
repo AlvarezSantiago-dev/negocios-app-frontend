@@ -2,9 +2,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Info, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function StockCriticoCard({ productos = [], onIrInventario }) {
+export default function StockCriticoCard({ productos = [] }) {
   const [hoverInfo, setHoverInfo] = useState(false);
+  const navigate = useNavigate();
 
   const getRowColor = (stock, min) => {
     if (stock < min) return "bg-red-100 text-red-700";
@@ -28,7 +30,7 @@ export default function StockCriticoCard({ productos = [], onIrInventario }) {
 
         {/* Botón Ir al Inventario */}
         <Button
-          onClick={onIrInventario}
+          onClick={() => navigate("/products")}
           className="flex items-center gap-2 bg-[#63b0cd] hover:bg-[#559bb4]"
         >
           <PackageSearch size={18} />

@@ -125,6 +125,7 @@ export default function BienvenidaDashboard({ fechaActual }) {
         onClose={() => setModalApertura(false)}
         onConfirm={async (montos) => {
           await abrirCaja(montos);
+          onRefresh(); //
           setModalApertura(false);
         }}
       />
@@ -135,6 +136,7 @@ export default function BienvenidaDashboard({ fechaActual }) {
         resumen={resumen}
         onConfirm={async (montos) => {
           await cerrarCaja(montos);
+          onRefresh();
           setModalCierre(false);
         }}
       />

@@ -1,12 +1,21 @@
 import { motion } from "framer-motion";
-import { Wallet, ShoppingCart, XCircle, Package } from "lucide-react";
+import {
+  Wallet,
+  ShoppingCart,
+  XCircle,
+  Package,
+  BarChart2,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function AccesosRapidos() {
+  const navigate = useNavigate();
+
   const accesos = [
-    { label: "Abrir Caja", icon: Wallet },
-    { label: "Ventas", icon: ShoppingCart },
-    { label: "Cerrar Caja", icon: XCircle },
-    { label: "Productos", icon: Package },
+    { label: "Caja", icon: Wallet, to: "/caja" },
+    { label: "Generar Venta", icon: ShoppingCart, to: "/ventas" },
+    { label: "Gestionar productos", icon: Package, to: "/products" },
+    { label: "Movimientos", icon: BarChart2, to: "/caja" },
   ];
 
   return (
@@ -27,8 +36,9 @@ export default function AccesosRapidos() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.96 }}
             transition={{ delay: i * 0.05 }}
+            onClick={() => navigate(a.to)}
             className="w-full flex items-center justify-center gap-3 py-4 rounded-xl 
-            bg-[#63b0cd] text-white font-medium shadow-md hover:bg-[#559bb4]"
+              bg-[#63b0cd] text-white font-medium shadow-md hover:bg-[#559bb4]"
           >
             <a.icon size={22} />
             {a.label}
