@@ -34,7 +34,6 @@ export default function AppRouter() {
         <Route path="caja" element={<CajaPage />} />
         <Route path="caja/nuevo" element={<CajaNuevo />} />
         <Route path="cierres" element={<CierresPage />} />
-        <Route path="test" element={<TestDashboard />} />
       </Route>
 
       {/* fallback */}

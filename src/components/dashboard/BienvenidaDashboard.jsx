@@ -19,12 +19,27 @@ export default function BienvenidaDashboard({ fechaActual }) {
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
 
-  // 🔹 Cargar caja al montar
+  // 🔹 Cargar resumen de caja al montar
   useEffect(() => {
     fetchCaja();
   }, []);
 
-  const botonActivo = !resumen?.abierta && !resumen?.aperturaHoy;
+  // Determinar estado del botón y mensaje según el resumen
+  const estadoCaja = () => {
+    if (resumen?.abierta)
+      return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
+    if (resumen?.aperturaHoy && resumen?.cierreHoy)
+      return { color: "red", texto: "Cerrada ✅ (cerrada hoy)", boton: null };
+    if (!resumen?.abierta && resumen?.aperturaHoy && !resumen?.cierreHoy)
+      return {
+        color: "yellow",
+        texto: "Cerrada ⚠ (pendiente cierre)",
+        boton: "Cerrar Caja",
+      };
+    return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
+  };
+
+  const { color, texto, boton } = estadoCaja();
 
   const handleApertura = async (montos) => {
     await abrirCaja(montos);
@@ -57,46 +72,51 @@ export default function BienvenidaDashboard({ fechaActual }) {
           <span className="flex items-center gap-3 text-lg font-semibold">
             <span
               className={`w-4 h-4 rounded-full ${
-                resumen?.abierta ? "bg-green-500 animate-ping" : "bg-red-500"
+                color === "green"
+                  ? "bg-green-500 animate-ping"
+                  : color === "red"
+                  ? "bg-red-500"
+                  : color === "yellow"
+                  ? "bg-yellow-500 animate-ping"
+                  : "bg-gray-400"
               }`}
             />
             <span
               className={`${
-                resumen?.abierta ? "text-green-600" : "text-red-600"
+                color === "green"
+                  ? "text-green-600"
+                  : color === "red"
+                  ? "text-red-600"
+                  : color === "yellow"
+                  ? "text-yellow-600"
+                  : "text-blue-600"
               }`}
             >
-              Estado de caja: {resumen?.abierta ? "Abierta ✅" : "Cerrada ❌"}
+              Estado de caja: {texto}
             </span>
           </span>
 
-          <button
-            onClick={() =>
-              resumen?.abierta ? setModalCierre(true) : setModalApertura(true)
-            }
-            disabled={
-              loading ||
-              loadingCierre ||
-              cerrando ||
-              (!resumen?.abierta && resumen?.aperturaHoy)
-            }
-            className={`relative overflow-hidden px-6 py-2 rounded-2xl font-bold text-white shadow-lg transition-all duration-300
-              ${
-                resumen?.abierta
-                  ? "bg-red-600 hover:bg-red-700"
-                  : botonActivo
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-gray-400 cursor-not-allowed"
-              }`}
-          >
-            <span className="relative flex items-center gap-2">
-              <Wallet className="w-5 h-5" />
-              {resumen?.abierta
-                ? loadingCierre || cerrando
-                  ? "Cerrando..."
-                  : "Cerrar Caja"
-                : "Abrir Caja"}
-            </span>
-          </button>
+          {boton && (
+            <button
+              onClick={() =>
+                boton === "Abrir Caja"
+                  ? setModalApertura(true)
+                  : setModalCierre(true)
+              }
+              disabled={loading || loadingCierre || cerrando}
+              className={`relative overflow-hidden px-6 py-2 rounded-2xl font-bold text-white shadow-lg transition-all duration-300
+                ${
+                  boton === "Abrir Caja"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-red-600 hover:bg-red-700"
+                }`}
+            >
+              <span className="relative flex items-center gap-2">
+                <Wallet className="w-5 h-5" />
+                {loadingCierre || cerrando ? "Cerrando..." : boton}
+              </span>
+            </button>
+          )}
         </div>
       </motion.div>
 
