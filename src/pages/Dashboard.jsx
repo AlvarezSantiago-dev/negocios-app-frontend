@@ -1,6 +1,10 @@
-// src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import useCajaStore from "../store/useCajaStore";
+import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
+import MovimientosTable from "../components/dashboard/MovimientosTable";
+import AccesosRapidos from "../components/dashboard/AccesosRapidos";
+import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
 import {
   DollarSign,
   TrendingUp,
@@ -8,62 +12,48 @@ import {
   BarChart2,
   Wallet,
   AlertTriangle,
-  CalendarDays,
 } from "lucide-react";
-import useCajaStore from "../store/useCajaStore";
-import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
-import MovimientosTable from "../components/dashboard/MovimientosTable";
-import AccesosRapidos from "../components/dashboard/AccesosRapidos";
-import StockCriticoCard from "../components/dashboard/StockCriticoCard";
 import { formatMoney } from "../services/dashboardService";
 import {
   fetchVentasHoy,
   fetchGanancias,
   fetchStockCritico,
 } from "../services/dashboardService";
-import { hoyArg } from "../utils/fecha";
+import { hoyArg } from "../utils/fecha.js";
 
 export default function Dashboard() {
-  const { resumen, movimientos, fetchCaja, loading, loadingCierre, cerrando } =
-    useCajaStore();
-
+  const { resumen, movimientos, fetchCaja } = useCajaStore();
   const [ventasHoy, setVentasHoy] = useState([]);
   const [ganHoy, setGanHoy] = useState(0);
   const [stockCritico, setStockCritico] = useState([]);
-  const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // Cargar dashboard
   useEffect(() => {
     const cargarDashboard = async () => {
-      setLoadingDashboard(true);
+      setLoading(true);
       const fechaISO = hoyArg();
 
-      try {
-        const [ventas, ganancias, stock] = await Promise.all([
-          fetchVentasHoy(fechaISO),
-          fetchGanancias(
-            new Date().getFullYear(),
-            new Date().getMonth() + 1,
-            new Date().getDate()
-          ),
-          fetchStockCritico(),
-        ]);
+      const [ventas, ganancias, stock] = await Promise.all([
+        fetchVentasHoy(fechaISO),
+        fetchGanancias(
+          new Date().getFullYear(),
+          new Date().getMonth() + 1,
+          new Date().getDate()
+        ),
+        fetchStockCritico(),
+      ]);
 
-        setVentasHoy(ventas);
-        setGanHoy(ganancias.totalGanado ?? 0);
-        setStockCritico(stock);
+      setVentasHoy(ventas);
+      setGanHoy(ganancias.totalGanado ?? 0);
+      setStockCritico(stock);
 
-        await fetchCaja(); // sincroniza caja y movimientos
-      } catch (err) {
-        console.error("Error cargarDashboard:", err);
-      } finally {
-        setLoadingDashboard(false);
-      }
+      await fetchCaja(); // sincroniza caja y movimientos
+      setLoading(false);
     };
     cargarDashboard();
-  }, [fetchCaja]);
+  }, []);
 
-  if (loadingDashboard) return <p className="p-6">Cargando...</p>;
+  if (loading) return <p className="p-6">Cargando...</p>;
 
   const totalHoy = ventasHoy.reduce((acc, v) => acc + (v.totalVenta ?? 0), 0);
   const cantHoy = ventasHoy.length;
@@ -74,33 +64,12 @@ export default function Dashboard() {
   });
   const hayStockBajo = stockCritico.some((p) => p.stock <= p.stockMinimo);
 
-  // Función para obtener estado de caja
-  const getEstadoCaja = () => {
-    if (!resumen)
-      return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
-    if (resumen.abierta)
-      return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
-    if (resumen.aperturaHoy && resumen.cierreHoy)
-      return { color: "red", texto: "Cerrada ✅ (cerrada hoy)", boton: null };
-    if (!resumen.abierta && resumen.aperturaHoy && !resumen.cierreHoy)
-      return {
-        color: "yellow",
-        texto: "Cerrada ⚠ (pendiente cierre)",
-        boton: "Cerrar Caja",
-      };
-    return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
-  };
-
-  const { color, texto, boton } = getEstadoCaja();
-
   return (
     <div className="p-6 space-y-10 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
-      {/* Bienvenida */}
       <motion.div>
         <BienvenidaDashboard fechaActual={fechaActual} />
       </motion.div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPI
           title="Vendido hoy"
@@ -130,7 +99,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Resumen de caja */}
       <motion.div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
         <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
           <Wallet /> Resumen de caja
@@ -141,27 +109,8 @@ export default function Dashboard() {
           <CajaItem label="Transferencia" value={resumen?.transferencia} />
           <CajaItem label="Total Caja" value={resumen?.total} />
         </div>
-        <div className="mt-4 flex gap-4">
-          {boton && (
-            <button
-              onClick={() => {
-                if (boton === "Abrir Caja") setModalApertura(true);
-                else if (boton === "Cerrar Caja") setModalCierre(true);
-              }}
-              disabled={loading || loadingCierre || cerrando}
-              className={`px-6 py-2 rounded-2xl font-bold text-white shadow-lg transition-all duration-300 ${
-                boton === "Abrir Caja"
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-red-600 hover:bg-red-700"
-              }`}
-            >
-              {loadingCierre || cerrando ? "Cerrando..." : boton}
-            </button>
-          )}
-        </div>
       </motion.div>
 
-      {/* Movimientos y accesos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <MovimientosTable data={movimientos} />
@@ -171,7 +120,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stock crítico */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <StockCriticoCard productos={stockCritico} />
@@ -181,7 +129,6 @@ export default function Dashboard() {
   );
 }
 
-// Componentes auxiliares
 function KPI({ title, icon, value }) {
   return (
     <motion.div
