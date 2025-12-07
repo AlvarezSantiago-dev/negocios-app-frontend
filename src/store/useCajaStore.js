@@ -9,12 +9,19 @@ const useCajaStore = create((set, get) => ({
   loadingCierre: false,
   cerrando: false,
 
+  // 🔹 Traer resumen y movimientos del día
   fetchCaja: async () => {
     set({ loading: true });
     try {
       const fecha = hoyArg(); // YYYY-MM-DD
+
+      // Resumen del día
       const resResumen = await api.get(`/caja/dia?fecha=${fecha}`);
-      const resMovimientos = await api.get("/caja/movimientos");
+
+      // Movimientos del día
+      const resMovimientos = await api.get(
+        `/caja/movimientos?desde=${fecha}&hasta=${fecha}`
+      );
 
       set({
         resumen: resResumen.data.response || {},
@@ -27,11 +34,12 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
+  // 🔹 Apertura de caja
   abrirCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loading: true });
     try {
       await api.post("/caja/apertura", { efectivo, mp, transferencia });
-      await get().fetchCaja();
+      await get().fetchCaja(); // refrescar datos
     } catch (err) {
       console.error("Error abrirCaja:", err);
     } finally {
@@ -39,11 +47,12 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
+  // 🔹 Cierre de caja
   cerrarCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loadingCierre: true, cerrando: true });
     try {
       await api.post("/caja/cierre", { efectivo, mp, transferencia });
-      await get().fetchCaja();
+      await get().fetchCaja(); // refrescar datos
     } catch (err) {
       console.error("Error cerrarCaja:", err);
     } finally {
@@ -51,12 +60,33 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
+  // 🔹 Crear un movimiento
   crearMovimiento: async (data) => {
     try {
       await api.post("/caja/movimiento", data);
-      await get().fetchCaja();
+      await get().fetchCaja(); // refrescar datos
     } catch (err) {
       console.error("Error crearMovimiento:", err);
+    }
+  },
+
+  // 🔹 Editar un movimiento
+  editarMovimiento: async (id, data) => {
+    try {
+      await api.put(`/caja/movimiento/${id}`, data);
+      await get().fetchCaja();
+    } catch (err) {
+      console.error("Error editarMovimiento:", err);
+    }
+  },
+
+  // 🔹 Eliminar un movimiento
+  eliminarMovimiento: async (id) => {
+    try {
+      await api.delete(`/caja/movimiento/${id}`);
+      await get().fetchCaja();
+    } catch (err) {
+      console.error("Error eliminarMovimiento:", err);
     }
   },
 }));

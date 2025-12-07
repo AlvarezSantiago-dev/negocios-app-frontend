@@ -1,3 +1,4 @@
+// src/components/dashboard/BienvenidaDashboard.jsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, CalendarDays } from "lucide-react";
@@ -19,12 +20,10 @@ export default function BienvenidaDashboard({ fechaActual }) {
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
 
-  // 🔹 Cargar resumen de caja al montar
   useEffect(() => {
     fetchCaja();
   }, []);
 
-  // 🔹 Determinar estado de caja y botón
   const estadoCaja = () => {
     if (resumen?.abierta)
       return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
@@ -44,23 +43,21 @@ export default function BienvenidaDashboard({ fechaActual }) {
 
   const { color, texto, boton } = estadoCaja();
 
-  // 🔹 Manejar apertura de caja
   const handleApertura = async (montos) => {
     try {
       await abrirCaja(montos);
       setModalApertura(false);
-      await fetchCaja(); // refrescar estado
+      await fetchCaja();
     } catch (err) {
       console.error("Error abrir caja:", err);
     }
   };
 
-  // 🔹 Manejar cierre de caja
   const handleCierre = async (montos) => {
     try {
       await cerrarCaja(montos);
       setModalCierre(false);
-      await fetchCaja(); // refrescar estado
+      await fetchCaja();
     } catch (err) {
       console.error("Error cerrar caja:", err);
     }
@@ -74,7 +71,6 @@ export default function BienvenidaDashboard({ fechaActual }) {
         transition={{ duration: 0.4 }}
         className="bg-white/70 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/40 flex flex-col sm:flex-row justify-between items-center gap-6"
       >
-        {/* Izquierda */}
         <div>
           <h1 className="text-4xl font-extrabold text-gray-800 flex items-center gap-3">
             <CalendarDays className="text-blue-600 w-9 h-9" /> ¡Bienvenido! 👋
@@ -82,7 +78,6 @@ export default function BienvenidaDashboard({ fechaActual }) {
           <p className="text-gray-600 text-sm mt-1 capitalize">{fechaActual}</p>
         </div>
 
-        {/* Derecha */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <span className="flex items-center gap-3 text-lg font-semibold">
             <span
@@ -111,7 +106,6 @@ export default function BienvenidaDashboard({ fechaActual }) {
             </span>
           </span>
 
-          {/* Botón dinámico */}
           {boton && (
             <button
               onClick={() =>
@@ -136,7 +130,6 @@ export default function BienvenidaDashboard({ fechaActual }) {
         </div>
       </motion.div>
 
-      {/* Modales */}
       <AperturaModal
         open={modalApertura}
         onClose={() => setModalApertura(false)}

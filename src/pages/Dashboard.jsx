@@ -1,10 +1,6 @@
+// src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import useCajaStore from "../store/useCajaStore";
-import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
-import MovimientosTable from "../components/dashboard/MovimientosTable";
-import AccesosRapidos from "../components/dashboard/AccesosRapidos";
-import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
 import {
   DollarSign,
   TrendingUp,
@@ -12,7 +8,13 @@ import {
   BarChart2,
   Wallet,
   AlertTriangle,
+  CalendarDays,
 } from "lucide-react";
+import useCajaStore from "../store/useCajaStore";
+import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
+import MovimientosTable from "../components/dashboard/MovimientosTable";
+import AccesosRapidos from "../components/dashboard/AccesosRapidos";
+import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
 import { formatMoney } from "../services/dashboardService";
 import {
   fetchVentasHoy,
@@ -129,6 +131,7 @@ export default function Dashboard() {
   );
 }
 
+// Componentes auxiliares
 function KPI({ title, icon, value }) {
   return (
     <motion.div
