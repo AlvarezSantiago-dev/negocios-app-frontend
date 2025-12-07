@@ -19,6 +19,7 @@ import {
   fetchGanancias,
   fetchStockCritico,
 } from "../services/dashboardService";
+import { hoyArg } from "../utils/fecha.js";
 
 export default function Dashboard() {
   const { resumen, movimientos, fetchCaja } = useCajaStore();
@@ -30,7 +31,8 @@ export default function Dashboard() {
   useEffect(() => {
     const cargarDashboard = async () => {
       setLoading(true);
-      const fechaISO = new Date().toISOString().split("T")[0];
+      const fechaISO = hoyArg();
+
       const [ventas, ganancias, stock] = await Promise.all([
         fetchVentasHoy(fechaISO),
         fetchGanancias(
@@ -40,9 +42,11 @@ export default function Dashboard() {
         ),
         fetchStockCritico(),
       ]);
+
       setVentasHoy(ventas);
       setGanHoy(ganancias.totalGanado ?? 0);
       setStockCritico(stock);
+
       await fetchCaja(); // sincroniza caja y movimientos
       setLoading(false);
     };

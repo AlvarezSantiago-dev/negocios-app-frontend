@@ -1,15 +1,10 @@
 import { create } from "zustand";
 import api from "../services/api";
-
-const hoy = () =>
-  new Date()
-    .toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })
-    .split(" ")[0];
+import { hoyArg, fechaCompletaArg } from "../utils/fecha";
 
 const useCajaStore = create((set, get) => ({
-  resumen: {}, // estado principal de la caja
+  resumen: {},
   movimientos: [],
-  cierreHoy: null,
   loading: false,
   loadingCierre: false,
   cerrando: false,
@@ -17,7 +12,7 @@ const useCajaStore = create((set, get) => ({
   fetchCaja: async () => {
     set({ loading: true });
     try {
-      const fecha = hoy();
+      const fecha = hoyArg();
       const resResumen = await api.get(
         `/caja/resumen?desde=${fecha}&hasta=${fecha}`
       );
@@ -37,7 +32,7 @@ const useCajaStore = create((set, get) => ({
   abrirCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loading: true });
     try {
-      await api.post("/caja/abrir", { efectivo, mp, transferencia });
+      await api.post("/caja/apertura", { efectivo, mp, transferencia });
       await get().fetchCaja();
     } catch (err) {
       console.error("Error abrirCaja:", err);
@@ -49,7 +44,7 @@ const useCajaStore = create((set, get) => ({
   cerrarCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loadingCierre: true, cerrando: true });
     try {
-      await api.post("/caja/cerrar", { efectivo, mp, transferencia });
+      await api.post("/caja/cierre", { efectivo, mp, transferencia });
       await get().fetchCaja();
     } catch (err) {
       console.error("Error cerrarCaja:", err);
@@ -67,4 +62,5 @@ const useCajaStore = create((set, get) => ({
     }
   },
 }));
+
 export default useCajaStore;
