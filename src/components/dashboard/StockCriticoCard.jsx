@@ -30,7 +30,7 @@ export default function StockCriticoCard({ productos = [] }) {
 
         {/* Botón Ir al Inventario */}
         <Button
-          onClick={() => navigate("/products")}
+          onClick={() => navigate("/productos")}
           className="flex items-center gap-2 bg-[#63b0cd] hover:bg-[#559bb4]"
         >
           <PackageSearch size={18} />
