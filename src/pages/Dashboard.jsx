@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import useDashboardStore from "../store/useDashboardStore";
+import useDashboardStore from "../store/useDasboardStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
 import AccesosRapidos from "../components/dashboard/AccesosRapidos";
