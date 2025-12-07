@@ -241,7 +241,7 @@ export default function CajaPage() {
           open={modalApertura}
           onClose={() => setModalApertura(false)}
           onConfirm={async (montos) => {
-            await abrirCaja(montos);
+            await abrirCaja(montos); // ⚡ refresca resumen y movimientos
             setModalApertura(false);
           }}
         />
@@ -250,8 +250,8 @@ export default function CajaPage() {
           open={modalCierre}
           onClose={() => setModalCierre(false)}
           resumen={resumen}
-          onConfirm={async (montos) => {
-            await cerrarCaja(montos);
+          onConfirm={async () => {
+            await cerrarCaja(); // ⚡ refresca resumen y movimientos
             setModalCierre(false);
           }}
         />

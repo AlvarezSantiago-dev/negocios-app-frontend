@@ -1,142 +1,107 @@
-import { useState } from "react";
-import {
-  fetchCajaResumen,
-  fetchCajaMovimientos,
-  crearMovimientoCaja,
-  editarMovimientoCaja,
-  eliminarMovimientoCaja,
-  aperturaCaja,
-  cierreCaja,
-  fetchCierres,
-  fetchCierreHoy,
-} from "../services/cajaService";
+import { create } from "zustand";
+import api from "../services/api";
 
-export default function useCajaStore() {
-  const [resumen, setResumen] = useState({});
-  const [movimientos, setMovimientos] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingCierre, setLoadingCierre] = useState(false);
-  const [cerrando, setCerrando] = useState(false);
+const hoy = () => new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
-  const [cierres, setCierres] = useState([]);
-  const [cierreHoy, setCierreHoy] = useState(null);
+const useCajaStore = create((set, get) => ({
+  resumen: {},
+  movimientos: [],
+  cierreHoy: null,
+  loading: false,
+  loadingCierre: false,
+  cerrando: false,
 
-  const fetchCierreData = async () => {
+  // Traer resumen y movimientos
+  fetchCaja: async () => {
+    set({ loading: true });
     try {
-      const hoy = await fetchCierreHoy();
-      setCierreHoy(hoy);
+      const fecha = hoy();
+      const resResumen = await api.get(
+        `/caja/resumen?desde=${fecha}&hasta=${fecha}`
+      );
+      const resMovimientos = await api.get("/caja/movimientos");
 
-      const todos = await fetchCierres();
-      setCierres(todos);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchCaja = async () => {
-    setLoading(true);
-    try {
-      const resResumen = await fetchCajaResumen();
-      setResumen({
-        efectivo: resResumen.efectivo ?? 0,
-        mp: resResumen.mp ?? 0,
-        transferencia: resResumen.transferencia ?? 0,
-        total: resResumen.total ?? 0,
-        aperturaHoy: resResumen.aperturaHoy ?? false,
-        cierreHoy: resResumen.cierreHoy ?? false,
-        abierta: resResumen.abierta ?? false,
+      set({
+        resumen: resResumen.data.response || {},
+        movimientos: resMovimientos.data.response || [],
+        loading: false,
       });
-      const resMovs = await fetchCajaMovimientos();
-      setMovimientos(resMovs);
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error("Error fetchCaja:", err);
+      set({ loading: false });
     }
-  };
+  },
 
-  const crearMovimiento = async (data) => {
-    setLoading(true);
+  // Apertura de caja
+  abrirCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
+    set({ loading: true });
     try {
-      await crearMovimientoCaja(data);
-      await fetchCaja();
+      await api.post("/caja/abrir", { efectivo, mp, transferencia });
+      await get().fetchCaja(); // refresca resumen y movimientos
     } catch (err) {
-      console.error(err);
+      console.error("Error abrirCaja:", err);
     } finally {
-      setLoading(false);
+      set({ loading: false });
     }
-  };
+  },
 
-  const editarMovimiento = async (id, data) => {
-    setLoading(true);
+  // Cierre de caja
+  cerrarCaja: async () => {
+    set({ loadingCierre: true, cerrando: true });
     try {
-      await editarMovimientoCaja(id, data);
-      await fetchCaja();
+      await api.post("/caja/cerrar");
+      await get().fetchCaja();
+      await get().fetchCierreData();
     } catch (err) {
-      console.error(err);
+      console.error("Error cerrarCaja:", err);
     } finally {
-      setLoading(false);
+      set({ loadingCierre: false, cerrando: false });
     }
-  };
+  },
 
-  const eliminarMovimiento = async (id) => {
-    setLoading(true);
+  // Crear movimiento
+  crearMovimiento: async (data) => {
     try {
-      await eliminarMovimientoCaja(id);
-      await fetchCaja();
+      await api.post("/caja/movimiento", data);
+      await get().fetchCaja(); // refresca resumen y movimientos
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error("Error crearMovimiento:", err);
     }
-  };
+  },
 
-  const abrirCaja = async (
-    montos = { efectivo: 0, mp: 0, transferencia: 0 }
-  ) => {
-    setLoading(true);
+  // Editar movimiento
+  editarMovimiento: async (_id, data) => {
     try {
-      await aperturaCaja(montos); // llama backend
+      await api.put(`/caja/movimiento/${_id}`, data);
+      await get().fetchCaja();
     } catch (err) {
-      console.error(err);
-    } finally {
-      await fetchCaja(); // ⚡ siempre sincronizamos con backend
-      setLoading(false);
+      console.error("Error editarMovimiento:", err);
     }
-  };
+  },
 
-  const cerrarCaja = async (
-    montos = { efectivo: 0, mp: 0, transferencia: 0 }
-  ) => {
-    if (resumen?.cierreHoy) return; // ⚡ si ya hay cierre, ni lo intenta
-
-    setCerrando(true);
-    setLoadingCierre(true);
+  // Eliminar movimiento
+  eliminarMovimiento: async (_id) => {
     try {
-      await cierreCaja(montos); // backend
+      await api.delete(`/caja/movimiento/${_id}`);
+      await get().fetchCaja();
     } catch (err) {
-      console.error(err);
-    } finally {
-      await fetchCaja(); // ⚡ sincroniza siempre
-      setCerrando(false);
-      setLoadingCierre(false);
+      console.error("Error eliminarMovimiento:", err);
     }
-  };
+  },
 
-  return {
-    resumen,
-    movimientos,
-    fetchCaja,
-    crearMovimiento,
-    editarMovimiento,
-    eliminarMovimiento,
-    abrirCaja,
-    cerrarCaja,
-    loading,
-    loadingCierre,
-    cerrando,
-    fetchCierreData,
-    cierreHoy,
-    cierres,
-  };
-}
+  // Traer datos del cierre de hoy
+  fetchCierreData: async () => {
+    try {
+      const res = await api.get("/caja/cierres/ultimos7");
+      const hoyFecha = hoy();
+      const cierre = res.data.response?.find(
+        (c) => new Date(c.fecha).toISOString().split("T")[0] === hoyFecha
+      );
+      set({ cierreHoy: cierre || null });
+    } catch (err) {
+      console.error("Error fetchCierreData:", err);
+    }
+  },
+}));
+
+export default useCajaStore;
