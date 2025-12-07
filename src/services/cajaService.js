@@ -57,16 +57,6 @@ export async function fetchGanancias(year, month, day) {
   );
 }
 
-/* RANKING DE PRODUCTOS */
-export async function fetchRankingProductos() {
-  try {
-    const data = await apiGet(`${API_VENTAS}/informes/ranking`);
-    return Array.isArray(data.ranking) ? data.ranking : [];
-  } catch {
-    return [];
-  }
-}
-
 /* STOCK CRÍTICO */
 export async function fetchStockCritico() {
   try {
@@ -113,4 +103,70 @@ export async function fetchCajaResumen() {
       total: 0,
     }
   );
+}
+export async function aperturaCaja(montos) {
+  const res = await fetch(`${API_CAJA}/abrir`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(montos),
+  });
+  if (!res.ok) throw new Error("No se pudo abrir la caja");
+  return res.json();
+}
+
+export async function cierreCaja(montos) {
+  const res = await fetch(`${API_CAJA}/cerrar`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(montos),
+  });
+  if (!res.ok) throw new Error("No se pudo cerrar la caja");
+  return res.json();
+}
+
+export async function crearMovimientoCaja(data) {
+  const res = await fetch(`${API_CAJA}/movimiento`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("No se pudo crear el movimiento");
+  return res.json();
+}
+
+export async function editarMovimientoCaja(id, data) {
+  const res = await fetch(`${API_CAJA}/movimiento/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("No se pudo editar el movimiento");
+  return res.json();
+}
+
+export async function eliminarMovimientoCaja(id) {
+  const res = await fetch(`${API_CAJA}/movimiento/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("No se pudo eliminar el movimiento");
+  return res.json();
+}
+
+export async function fetchCierres() {
+  const res = await fetch(`${API_CAJA}/cierres`, { credentials: "include" });
+  if (!res.ok) throw new Error("No se pudieron obtener los cierres");
+  const data = await res.json();
+  return data.response ?? [];
+}
+
+export async function fetchCierreHoy() {
+  const res = await fetch(`${API_CAJA}/cierre-hoy`, { credentials: "include" });
+  if (!res.ok) throw new Error("No se pudo obtener cierre de hoy");
+  const data = await res.json();
+  return data.response ?? null;
 }
