@@ -9,7 +9,7 @@ export default function Register() {
   const [form, setForm] = useState({
     nombre: "",
     email: "",
-    contraseña: "",
+    password: "",
   });
 
   const [showPass, setShowPass] = useState(false);
@@ -97,17 +97,17 @@ export default function Register() {
                 />
               </div>
 
-              {/* Contraseña */}
+              {/* password */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Contraseña
+                  password
                 </label>
                 <div className="relative mt-1">
                   <Input
                     type={showPass ? "text" : "password"}
                     placeholder="••••••••"
-                    name="contraseña"
-                    value={form.contraseña}
+                    name="password"
+                    value={form.password}
                     onChange={handleChange}
                     required
                   />

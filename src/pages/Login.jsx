@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 
 export default function Login() {
   const [email, setEmail] = useState("");
-  const [contraseña, setContraseña] = useState("");
+  const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +23,7 @@ export default function Login() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ email, contraseña }),
+      body: JSON.stringify({ email, password }),
     });
 
     const loginData = await res.json();
@@ -87,14 +87,14 @@ export default function Login() {
 
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Contraseña
+                  password
                 </label>
                 <div className="relative mt-1">
                   <Input
                     type={showPass ? "text" : "password"}
                     placeholder="••••••••"
-                    value={contraseña}
-                    onChange={(e) => setContraseña(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                   />
                   <button
