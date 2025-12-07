@@ -1,19 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
+import useDashboardStore from "../store/useDasboardStore";
+import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
 import AccesosRapidos from "../components/dashboard/AccesosRapidos";
-
-import {
-  fetchVentasHoy,
-  fetchGanancias,
-  fetchStockCritico,
-  getFechaLocalYYYYMMDD,
-  formatMoney,
-  fetchCajaMovimientos,
-} from "../services/dashboardService";
-
-import { fetchCajaResumen } from "../services/cajaService";
-import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
+import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
 import {
   DollarSign,
   TrendingUp,
@@ -21,45 +12,23 @@ import {
   BarChart2,
   Wallet,
   AlertTriangle,
-  CalendarDays,
-  DoorOpen,
 } from "lucide-react";
-import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
+import { formatMoney } from "../services/dashboardService";
 
 export default function Dashboard() {
-  const [ventasHoy, setVentasHoy] = useState([]);
-  const [ganHoy, setGanHoy] = useState(0);
-  const [stockCritico, setStockCritico] = useState([]);
-  const [caja, setCaja] = useState({
-    efectivo: 0,
-    mp: 0,
-    transferencia: 0,
-    total: 0,
-  });
-  const [movimientos, setMovimientos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    ventasHoy,
+    ganHoy,
+    stockCritico,
+    caja,
+    movimientos,
+    loading,
+    fetchDashboard,
+  } = useDashboardStore();
 
+  // 🔹 Traemos datos al cargar
   useEffect(() => {
-    async function load() {
-      const fechaISO = getFechaLocalYYYYMMDD();
-      const hoyVentas = await fetchVentasHoy(fechaISO);
-      const hoyGan = await fetchGanancias(
-        new Date().getFullYear(),
-        new Date().getMonth() + 1,
-        new Date().getDate()
-      );
-      const criticos = await fetchStockCritico();
-      const resumen = await fetchCajaResumen();
-      const movs = await fetchCajaMovimientos(5);
-
-      setVentasHoy(hoyVentas);
-      setGanHoy(hoyGan.totalGanado ?? 0);
-      setStockCritico(criticos);
-      setCaja(resumen);
-      setMovimientos(movs);
-      setLoading(false);
-    }
-    load();
+    fetchDashboard();
   }, []);
 
   if (loading) return <p className="p-6">Cargando...</p>;
@@ -71,14 +40,16 @@ export default function Dashboard() {
     day: "numeric",
     month: "long",
   });
-
   const hayStockBajo = stockCritico.some((p) => p.stock <= p.stockMinimo);
 
   return (
     <div className="p-6 space-y-10 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
       {/* Bienvenida */}
       <motion.div>
-        <BienvenidaDashboard fechaActual={fechaActual} />
+        <BienvenidaDashboard
+          fechaActual={fechaActual}
+          onRefresh={fetchDashboard}
+        />
       </motion.div>
 
       {/* KPIs */}
@@ -132,18 +103,16 @@ export default function Dashboard() {
 
       {/* Movimientos + Accesos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Movs ocupa 2 columnas para más espacio */}
         <div className="lg:col-span-2">
           <MovimientosTable data={movimientos} />
         </div>
-
         <div>
           <AccesosRapidos />
         </div>
       </div>
 
+      {/* Stock crítico */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Movs ocupa 2 columnas para más espacio */}
         <div className="lg:col-span-2">
           <StockCriticoCard productos={stockCritico} />
         </div>
@@ -154,7 +123,6 @@ export default function Dashboard() {
 }
 
 /* SUB-COMPONENTES PEQUEÑOS */
-
 function KPI({ title, icon, value }) {
   return (
     <motion.div

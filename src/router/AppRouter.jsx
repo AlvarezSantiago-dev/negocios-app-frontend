@@ -18,8 +18,8 @@ export default function AppRouter() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
 
       {/* Protected */}
       <Route
