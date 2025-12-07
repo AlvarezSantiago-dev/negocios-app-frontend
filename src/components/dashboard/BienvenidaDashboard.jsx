@@ -5,7 +5,7 @@ import useCajaStore from "../../store/useCajaStore";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
 
-export default function BienvenidaDashboard({ fechaActual }) {
+export default function BienvenidaDashboard({ fechaActual, onRefresh }) {
   const {
     resumen,
     fetchCaja,
