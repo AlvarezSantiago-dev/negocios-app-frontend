@@ -1,31 +1,37 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, CalendarDays } from "lucide-react";
-import useCajaStore from "../../store/useCajaStore";
+import useDashboardStore from "../../store/useDashboardStore";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
+import useCajaStore from "../../store/useCajaStore";
 
-export default function BienvenidaDashboard({ fechaActual, onRefresh }) {
-  const {
-    resumen,
-    fetchCaja,
-    abrirCaja,
-    cerrarCaja,
-    loading,
-    loadingCierre,
-    cerrando,
-  } = useCajaStore();
+export default function BienvenidaDashboard({ fechaActual }) {
+  const { caja, actualizarCaja, syncDashboard } = useDashboardStore();
+  const { resumen, abrirCaja, cerrarCaja, loading, loadingCierre, cerrando } =
+    useCajaStore();
 
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
 
-  // 🔹 Traemos siempre el estado actualizado al cargar
+  // 🔹 Actualizamos caja al cargar
   useEffect(() => {
-    fetchCaja();
+    actualizarCaja();
   }, []);
 
-  // 🔹 Determinamos si el botón Abrir Caja está activo
   const botonActivo = !resumen?.abierta && !resumen?.aperturaHoy;
+
+  const handleApertura = async (montos) => {
+    await abrirCaja(montos);
+    await syncDashboard(); // sincroniza todo el dashboard
+    setModalApertura(false);
+  };
+
+  const handleCierre = async (montos) => {
+    await cerrarCaja(montos);
+    await syncDashboard(); // sincroniza todo el dashboard
+    setModalCierre(false);
+  };
 
   return (
     <>
@@ -45,7 +51,6 @@ export default function BienvenidaDashboard({ fechaActual, onRefresh }) {
 
         {/* Derecha */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          {/* Estado de caja */}
           <span className="flex items-center gap-3 text-lg font-semibold">
             <span
               className={`w-4 h-4 rounded-full ${
@@ -61,14 +66,6 @@ export default function BienvenidaDashboard({ fechaActual, onRefresh }) {
             </span>
           </span>
 
-          {/* Mensaje diario */}
-          {resumen?.cierreHoy && !resumen?.abierta && (
-            <span className="text-gray-500 italic text-sm mt-1 sm:mt-0">
-              Caja cerrada. La próxima apertura estará disponible mañana.
-            </span>
-          )}
-
-          {/* Botón Abrir/Cerrar */}
           <button
             onClick={() =>
               resumen?.abierta ? setModalCierre(true) : setModalApertura(true)
@@ -88,10 +85,6 @@ export default function BienvenidaDashboard({ fechaActual, onRefresh }) {
                   : "bg-gray-400 cursor-not-allowed"
               }`}
           >
-            {/* Shimmer efecto */}
-            {botonActivo && !resumen?.abierta && (
-              <span className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/30 to-white/10 animate-[shimmer_2s_infinite]"></span>
-            )}
             <span className="relative flex items-center gap-2">
               <Wallet className="w-5 h-5" />
               {resumen?.abierta
@@ -102,43 +95,19 @@ export default function BienvenidaDashboard({ fechaActual, onRefresh }) {
             </span>
           </button>
         </div>
-
-        {/* Animación Shimmer Keyframes */}
-        <style jsx>{`
-          @keyframes shimmer {
-            0% {
-              transform: translateX(-100%);
-            }
-            100% {
-              transform: translateX(100%);
-            }
-          }
-          .animate-[shimmer_2s_infinite] {
-            animation: shimmer 2s infinite linear;
-          }
-        `}</style>
       </motion.div>
 
-      {/* Modales */}
       <AperturaModal
         open={modalApertura}
         onClose={() => setModalApertura(false)}
-        onConfirm={async (montos) => {
-          await abrirCaja(montos);
-          onRefresh(); //
-          setModalApertura(false);
-        }}
+        onConfirm={handleApertura}
       />
 
       <CierreModal
         open={modalCierre}
         onClose={() => setModalCierre(false)}
         resumen={resumen}
-        onConfirm={async (montos) => {
-          await cerrarCaja(montos);
-          onRefresh();
-          setModalCierre(false);
-        }}
+        onConfirm={handleCierre}
       />
     </>
   );

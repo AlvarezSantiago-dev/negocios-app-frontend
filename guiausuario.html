@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guía de Usuario PDF</title>
+  </head>
+  <body>
+    <button id="downloadBtn" style="padding: 10px 20px; font-size: 16px">
+      📥 Descargar Guía en PDF
+    </button>
+
+    <!-- jsPDF y AutoTable desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+      const { jsPDF } = window.jspdf;
+      const autoTable = window.jspdfAutoTable;
+
+      function generarPDFGuia() {
+        const doc = new jsPDF();
+        const fecha = new Date();
+        doc.setFontSize(16);
+        doc.text("📘 Guía de Usuario - Sistema de Gestión", 14, 20);
+        doc.setFontSize(10);
+        doc.text(
+          `Generado el ${fecha.toLocaleDateString(
+            "es-AR"
+          )} a las ${fecha.toLocaleTimeString("es-AR")}`,
+          180,
+          20,
+          { align: "right" }
+        );
+
+        let y = 30;
+
+        // Array de secciones
+        const secciones = [
+          {
+            titulo: "🌟 1. Dashboard Principal",
+            contenido: "Resumen general del día y accesos rápidos.",
+          },
+          {
+            titulo: "🔹 1.1 Bienvenida",
+            contenido: "Saludo personalizado y fecha actual.",
+          },
+          {
+            titulo: "🔹 1.2 KPIs del Día",
+            contenido: "Vendido hoy, Ganancia hoy, Ventas hoy, Stock crítico.",
+          },
+          {
+            titulo: "💼 2. Página de Caja",
+            contenido: "Gestión de apertura, cierre y movimientos.",
+          },
+          {
+            titulo: "🟢 3. Apertura de Caja",
+            contenido: "Ingresar montos iniciales y abrir caja.",
+          },
+          {
+            titulo: "🔴 4. Cierre de Caja",
+            contenido: "Registrar montos finales y generar cierre.",
+          },
+          {
+            titulo: "✍ 5. Movimientos",
+            contenido: "Crear o editar ingresos y egresos manuales.",
+          },
+        ];
+
+        secciones.forEach((sec) => {
+          doc.setFontSize(14);
+          doc.setTextColor(53, 121, 166);
+          doc.text(sec.titulo, 14, y);
+          y += 6;
+          doc.setDrawColor(53, 121, 166);
+          doc.line(14, y, 196, y);
+          y += 10;
+
+          autoTable(doc, {
+            startY: y,
+            body: [[sec.contenido]],
+            theme: "grid",
+            styles: { fontSize: 10, cellPadding: 2, halign: "left" },
+            tableWidth: 180,
+          });
+
+          y = doc.lastAutoTable.finalY + 10;
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+        });
+
+        doc.setFontSize(10);
+        doc.text("Sistema de Gestión — Guía Automática", 105, 287, {
+          align: "center",
+        });
+        doc.save("Guia_Usuario_Sistema.pdf");
+      }
+
+      document
+        .getElementById("downloadBtn")
+        .addEventListener("click", generarPDFGuia);
+    </script>
+  </body>
+</html>

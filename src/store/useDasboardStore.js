@@ -1,5 +1,4 @@
-// src/store/useDashboardStore.js
-import { useState } from "react";
+import { create } from "zustand";
 import {
   fetchVentasHoy,
   fetchGanancias,
@@ -8,53 +7,97 @@ import {
 } from "../services/dashboardService";
 import { fetchCajaResumen } from "../services/cajaService";
 
-export default function useDashboardStore() {
-  const [ventasHoy, setVentasHoy] = useState([]);
-  const [ganHoy, setGanHoy] = useState(0);
-  const [stockCritico, setStockCritico] = useState([]);
-  const [caja, setCaja] = useState({
-    efectivo: 0,
-    mp: 0,
-    transferencia: 0,
-    total: 0,
-  });
-  const [movimientos, setMovimientos] = useState([]);
-  const [loading, setLoading] = useState(false);
+const useDashboardStore = create((set, get) => ({
+  ventasHoy: [],
+  ganHoy: 0,
+  stockCritico: [],
+  caja: { efectivo: 0, mp: 0, transferencia: 0, total: 0 },
+  movimientos: [],
+  loading: false,
 
-  // 🔹 Función para traer todo el dashboard
-  const fetchDashboard = async () => {
-    setLoading(true);
+  // 🔹 Traer todo el dashboard
+  fetchDashboard: async () => {
+    set({ loading: true });
     try {
-      const fechaISO = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const fechaISO = new Date().toISOString().split("T")[0];
+      const [ventas, ganancias, critico, resumenCaja, movs] = await Promise.all(
+        [
+          fetchVentasHoy(fechaISO),
+          fetchGanancias(
+            new Date().getFullYear(),
+            new Date().getMonth() + 1,
+            new Date().getDate()
+          ),
+          fetchStockCritico(),
+          fetchCajaResumen(),
+          fetchCajaMovimientos(5),
+        ]
+      );
+
+      set({
+        ventasHoy: ventas,
+        ganHoy: ganancias.totalGanado ?? 0,
+        stockCritico: critico,
+        caja: resumenCaja,
+        movimientos: movs,
+      });
+    } catch (err) {
+      console.error("Error fetchDashboard:", err);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  // 🔹 Actualizar solo caja
+  actualizarCaja: async () => {
+    try {
+      const resumenCaja = await fetchCajaResumen();
+      set({ caja: resumenCaja });
+    } catch (err) {
+      console.error("Error actualizarCaja:", err);
+    }
+  },
+
+  // 🔹 Actualizar movimientos
+  actualizarMovimientos: async () => {
+    try {
+      const movs = await fetchCajaMovimientos(5);
+      set({ movimientos: movs });
+    } catch (err) {
+      console.error("Error actualizarMovimientos:", err);
+    }
+  },
+
+  // 🔹 Actualizar ventas y ganancias
+  actualizarVentas: async () => {
+    try {
+      const fechaISO = new Date().toISOString().split("T")[0];
       const ventas = await fetchVentasHoy(fechaISO);
       const ganancias = await fetchGanancias(
         new Date().getFullYear(),
         new Date().getMonth() + 1,
         new Date().getDate()
       );
-      const critico = await fetchStockCritico();
-      const resumenCaja = await fetchCajaResumen();
-      const movs = await fetchCajaMovimientos(5);
-
-      setVentasHoy(ventas);
-      setGanHoy(ganancias.totalGanado ?? 0);
-      setStockCritico(critico);
-      setCaja(resumenCaja);
-      setMovimientos(movs);
+      set({ ventasHoy: ventas, ganHoy: ganancias.totalGanado ?? 0 });
     } catch (err) {
-      console.error("Error fetchDashboard:", err);
-    } finally {
-      setLoading(false);
+      console.error("Error actualizarVentas:", err);
     }
-  };
+  },
 
-  return {
-    ventasHoy,
-    ganHoy,
-    stockCritico,
-    caja,
-    movimientos,
-    loading,
-    fetchDashboard,
-  };
-}
+  // 🔹 Actualizar stock crítico
+  actualizarStockCritico: async () => {
+    try {
+      const critico = await fetchStockCritico();
+      set({ stockCritico: critico });
+    } catch (err) {
+      console.error("Error actualizarStockCritico:", err);
+    }
+  },
+
+  // 🔹 Función para sincronización completa
+  syncDashboard: async () => {
+    await get().fetchDashboard();
+  },
+}));
+
+export default useDashboardStore;
