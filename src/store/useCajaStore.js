@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import api from "../services/api";
-import { hoyArg, fechaCompletaArg } from "../utils/fecha";
+import { hoyArg } from "../utils/fecha";
 
 const useCajaStore = create((set, get) => ({
   resumen: {},
@@ -12,10 +12,8 @@ const useCajaStore = create((set, get) => ({
   fetchCaja: async () => {
     set({ loading: true });
     try {
-      const fecha = hoyArg();
-      const resResumen = await api.get(
-        `/caja/resumen?desde=${fecha}&hasta=${fecha}`
-      );
+      const fecha = hoyArg(); // YYYY-MM-DD
+      const resResumen = await api.get(`/caja/dia?fecha=${fecha}`);
       const resMovimientos = await api.get("/caja/movimientos");
 
       set({
