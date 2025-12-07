@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import useDashboardStore from "../store/useDasboardStore";
+import useDashboardStore from "../store/useDashboardStore"; // ✅ import corregido
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
 import AccesosRapidos from "../components/dashboard/AccesosRapidos";
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboard();
-  }, []);
+  }, [fetchDashboard]);
 
   if (loading) return <p className="p-6">Cargando...</p>;
 

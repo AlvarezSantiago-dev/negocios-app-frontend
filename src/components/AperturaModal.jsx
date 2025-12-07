@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +21,15 @@ import { formatMoney } from "../services/dashboardService";
 export function AperturaModal({ open, onClose, onConfirm }) {
   const [form, setForm] = useState({ efectivo: "", mp: "", transferencia: "" });
 
+  // Reset form cada vez que se abre
+  useEffect(() => {
+    if (open) setForm({ efectivo: "", mp: "", transferencia: "" });
+  }, [open]);
+
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const save = () => {
-    onConfirm({
+  const save = async () => {
+    await onConfirm({
       efectivo: Number(form.efectivo || 0),
       mp: Number(form.mp || 0),
       transferencia: Number(form.transferencia || 0),
@@ -52,59 +57,31 @@ export function AperturaModal({ open, onClose, onConfirm }) {
             </DialogHeader>
 
             <div className="mt-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  name="efectivo"
-                  placeholder="Efectivo inicial"
-                  value={form.efectivo}
-                  onChange={handle}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Dinero físico inicial en la caja.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  name="mp"
-                  placeholder="MercadoPago inicial"
-                  value={form.mp}
-                  onChange={handle}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Saldo inicial recibido por Mercado Pago.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  name="transferencia"
-                  placeholder="Transferencia inicial"
-                  value={form.transferencia}
-                  onChange={handle}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Saldo inicial recibido por transferencias bancarias.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              {["efectivo", "mp", "transferencia"].map((field) => (
+                <div className="flex items-center gap-2" key={field}>
+                  <Input
+                    type="number"
+                    name={field}
+                    placeholder={`${
+                      field[0].toUpperCase() + field.slice(1)
+                    } inicial`}
+                    value={form[field]}
+                    onChange={handle}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {field === "efectivo"
+                        ? "Dinero físico inicial en la caja."
+                        : field === "mp"
+                        ? "Saldo inicial recibido por Mercado Pago."
+                        : "Saldo inicial recibido por transferencias bancarias."}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              ))}
 
               <div className="text-right font-semibold text-gray-700">
                 Total inicial:{" "}
@@ -113,10 +90,12 @@ export function AperturaModal({ open, onClose, onConfirm }) {
             </div>
 
             <DialogFooter className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button onClick={save}>Abrir Caja</Button>
+              <Button type="button" onClick={save}>
+                Abrir Caja
+              </Button>
             </DialogFooter>
           </motion.div>
         </DialogContent>

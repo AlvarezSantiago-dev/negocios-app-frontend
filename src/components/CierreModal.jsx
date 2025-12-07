@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,12 @@ import { formatMoney } from "../services/dashboardService";
 export function CierreModal({ open, onClose, onConfirm, resumen }) {
   const [form, setForm] = useState({ efectivo: "", mp: "", transferencia: "" });
   const [error, setError] = useState("");
+
+  // Reset form cada vez que se abre
+  useEffect(() => {
+    if (open) setForm({ efectivo: "", mp: "", transferencia: "" });
+    if (open) setError("");
+  }, [open]);
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -66,57 +72,31 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
             </DialogHeader>
 
             <div className="mt-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  name="efectivo"
-                  placeholder="Efectivo declarado"
-                  value={form.efectivo}
-                  onChange={handle}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>Dinero físico declarado.</TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  name="mp"
-                  placeholder="MercadoPago declarado"
-                  value={form.mp}
-                  onChange={handle}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Saldo declarado por Mercado Pago.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  name="transferencia"
-                  placeholder="Transferencia declarada"
-                  value={form.transferencia}
-                  onChange={handle}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Saldo declarado por transferencias bancarias.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              {["efectivo", "mp", "transferencia"].map((field) => (
+                <div className="flex items-center gap-2" key={field}>
+                  <Input
+                    type="number"
+                    name={field}
+                    placeholder={`${
+                      field[0].toUpperCase() + field.slice(1)
+                    } declarado`}
+                    value={form[field]}
+                    onChange={handle}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {field === "efectivo"
+                        ? "Dinero físico declarado."
+                        : field === "mp"
+                        ? "Saldo declarado por Mercado Pago."
+                        : "Saldo declarado por transferencias bancarias."}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              ))}
 
               <div className="text-right font-semibold text-gray-700">
                 Total declarado:{" "}
@@ -129,10 +109,11 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
             </div>
 
             <DialogFooter className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
               <Button
+                type="button"
                 onClick={save}
                 disabled={!resumen?.abierta || resumen?.cierreHoy}
               >
