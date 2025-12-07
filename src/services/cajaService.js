@@ -100,3 +100,17 @@ export async function fetchCajaMovimientos(limit = 5) {
   const movimientos = data.response ?? [];
   return movimientos.slice(0, limit);
 }
+
+export async function fetchCajaResumen() {
+  const res = await fetch(`${API_CAJA}/resumen`, { credentials: "include" });
+  if (!res.ok) throw new Error("Error al obtener resumen de caja");
+  const data = await res.json();
+  return (
+    data.response ?? {
+      efectivo: 0,
+      mp: 0,
+      transferencia: 0,
+      total: 0,
+    }
+  );
+}
