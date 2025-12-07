@@ -1,91 +1,102 @@
 const API_CAJA = `${import.meta.env.VITE_API_URL}/caja`;
+const API_VENTAS = `${import.meta.env.VITE_API_URL}/ventas`;
 
-// src/services/cajaService.js
-
+// Helper con credentials
 async function apiGet(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("API ERROR: " + res.status);
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text}`);
+  }
   return res.json();
 }
 
-export async function fetchUltimosCierres() {
-  const data = await apiGet(`${API_CAJA}/cierres/ultimos7`);
-  return data.response ?? [];
+export function getFechaLocalYYYYMMDD() {
+  const ahora = new Date();
+  const año = ahora.getFullYear();
+  const mes = String(ahora.getMonth() + 1).padStart(2, "0");
+  const dia = String(ahora.getDate()).padStart(2, "0");
+  return `${año}-${mes}-${dia}`;
 }
 
-// --- RESUMEN ---
-export async function fetchCajaResumen() {
-  const data = await apiGet(`${API_CAJA}/resumen`);
-  const resumen = data.response ?? {};
-
-  // 🔹 Determinamos si la caja está abierta según aperturas y cierres
-  resumen.abierta = resumen.aperturaHoy && !resumen.cierreHoy;
-
-  return resumen;
-}
-
-// --- MOVIMIENTOS ---
-export async function fetchCajaMovimientos() {
-  const data = await apiGet(`${API_CAJA}/movimientos`);
-  return data.response ?? [];
-}
-
-export async function crearMovimientoCaja(body) {
-  const res = await fetch(`${API_CAJA}/movimiento`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error("Error al crear movimiento");
-  return (await res.json()).response;
-}
-
-export async function editarMovimientoCaja(id, body) {
-  const res = await fetch(`${API_CAJA}/movimiento/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error("Error al editar movimiento");
-  return (await res.json()).response;
-}
-
-export async function eliminarMovimientoCaja(id) {
-  const res = await fetch(`${API_CAJA}/movimiento/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Error al eliminar movimiento");
-  return (await res.json()).response;
-}
-
-// --- APERTURA ---
-export async function aperturaCaja({ efectivo, mp, transferencia }) {
-  const res = await fetch(`${API_CAJA}/apertura`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ efectivo, mp, transferencia }),
-  });
-  if (!res.ok) throw new Error("Error al abrir caja");
-  return (await res.json()).response;
-}
-
-// --- CIERRE ---
-export async function cierreCaja({ efectivo = 0, mp = 0, transferencia = 0 }) {
-  const res = await fetch(`${API_CAJA}/cierre`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ efectivo, mp, transferencia }),
-  });
-  if (!res.ok) {
-    const errorText = await res.text().catch(() => "Unknown error");
-    throw new Error(`Error al cerrar caja: ${res.status} ${errorText}`);
+/* VENTAS DEL DÍA */
+export async function fetchVentasHoy(fechaISO) {
+  try {
+    const res = await fetch(
+      `${API_VENTAS}/informes/diarias?fecha=${fechaISO}`,
+      {
+        credentials: "include",
+      }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.ventas?.ventas ?? [];
+  } catch (err) {
+    console.error("Error fetchVentasHoy:", err);
+    return [];
   }
-  return (await res.json()).response;
 }
 
-export async function fetchCierres() {
-  const data = await apiGet(`${API_CAJA}/cierres`);
-  return data.response ?? [];
+/* VENTAS MENSUALES */
+export async function fetchVentasMensuales(year, month) {
+  const data = await apiGet(
+    `${API_VENTAS}/informes/mensuales?year=${year}&month=${month}`
+  );
+  return Array.isArray(data.ventas) ? data.ventas : [];
 }
-export async function fetchCierreHoy() {
-  const data = await apiGet(`${API_CAJA}/cierres/hoy`);
-  return data.response ?? null;
+
+/* GANANCIAS */
+export async function fetchGanancias(year, month, day) {
+  const data = await apiGet(
+    `${API_VENTAS}/informes/ganancias?year=${year}&month=${month}${
+      day ? `&day=${day}` : ""
+    }`
+  );
+  return (
+    data.ganancias ?? { totalGanado: 0, totalVendido: 0, cantidadVentas: 0 }
+  );
+}
+
+/* RANKING DE PRODUCTOS */
+export async function fetchRankingProductos() {
+  try {
+    const data = await apiGet(`${API_VENTAS}/informes/ranking`);
+    return Array.isArray(data.ranking) ? data.ranking : [];
+  } catch {
+    return [];
+  }
+}
+
+/* STOCK CRÍTICO */
+export async function fetchStockCritico() {
+  try {
+    const res = await fetch(`${API_CAJA}/products`, { credentials: "include" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const productos = data.response ?? [];
+    const criticos = productos.filter(
+      (p) => Number(p.stock) <= Number(p.stockMinimo)
+    );
+    criticos.sort((a, b) => a.stock - b.stock);
+    return criticos;
+  } catch (err) {
+    console.warn("No se pudo obtener stock crítico:", err.message);
+    return [];
+  }
+}
+
+/* FORMATEO DE MONEDA */
+export function formatMoney(n) {
+  const valor = Number(n ?? 0);
+  return valor.toLocaleString("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
+/* ÚLTIMOS MOVIMIENTOS DE CAJA */
+export async function fetchCajaMovimientos(limit = 5) {
+  const data = await apiGet(`${API_CAJA}/movimientos`);
+  const movimientos = data.response ?? [];
+  return movimientos.slice(0, limit);
 }
