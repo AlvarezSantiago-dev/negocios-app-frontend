@@ -11,6 +11,7 @@ import useAuthStore from "../store/authStore";
 import CajaNuevo from "../pages/CajaNuevo";
 import CajaPage from "../pages/CajaPage";
 import CierresPage from "../pages/HistorialCierres";
+import TestDashboard from "../pages/TestDashboard";
 
 export default function AppRouter() {
   const isAuth = useAuthStore((s) => s.isAuth);
@@ -33,6 +34,7 @@ export default function AppRouter() {
         <Route path="caja" element={<CajaPage />} />
         <Route path="caja/nuevo" element={<CajaNuevo />} />
         <Route path="cierres" element={<CierresPage />} />
+        <Route path="test" element={<TestDashboard />} />
       </Route>
 
       {/* fallback */}

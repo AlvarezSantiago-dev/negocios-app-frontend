@@ -129,6 +129,32 @@ export default function Sidebar() {
                 </AnimatePresence>
               </NavLink>
 
+              <NavLink
+                to="/test"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 p-2 rounded-lg transition-colors
+                   outline-none focus-visible:ring-2 focus-visible:ring-blue-400
+                   ${
+                     isActive
+                       ? "bg-blue-200 text-blue-900"
+                       : "hover:bg-blue-100"
+                   }`
+                }
+              >
+                <Wallet size={20} />
+                <AnimatePresence>
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                    >
+                      test
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </NavLink>
+
               <NavLink to="/cierres">
                 <Button
                   variant="default"
