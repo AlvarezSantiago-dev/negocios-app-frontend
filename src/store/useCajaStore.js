@@ -9,19 +9,19 @@ const useCajaStore = create((set, get) => ({
   loadingCierre: false,
   cerrando: false,
 
-  // 🔹 Traer resumen y movimientos del día
+  // 🔹 Traer resumen del día actual y últimos 5 movimientos
   fetchCaja: async () => {
     set({ loading: true });
     try {
-      const fecha = hoyArg(); // YYYY-MM-DD
+      const hoyISO = hoyArg(); // YYYY-MM-DD
 
-      // Resumen del día
-      const resResumen = await api.get(`/caja/dia?fecha=${fecha}`);
-
-      // Movimientos del día
-      const resMovimientos = await api.get(
-        `/caja/movimientos?desde=${fecha}&hasta=${fecha}`
+      // Resumen del día actual
+      const resResumen = await api.get(
+        `/caja/resumen?desde=${hoyISO}&hasta=${hoyISO}`
       );
+
+      // Últimos 5 movimientos (sin filtrar por fecha)
+      const resMovimientos = await api.get("/caja/movimientos?limit=5");
 
       set({
         resumen: resResumen.data.response || {},
