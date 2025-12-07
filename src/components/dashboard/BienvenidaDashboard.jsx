@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, CalendarDays } from "lucide-react";
-import useDashboardStore from "../../store/useDashboardStore";
+import useDashboardStore from "../../store/useDasboardStore";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
 import useCajaStore from "../../store/useCajaStore";
