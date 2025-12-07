@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import useCajaStore from "../store/useCajaStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
