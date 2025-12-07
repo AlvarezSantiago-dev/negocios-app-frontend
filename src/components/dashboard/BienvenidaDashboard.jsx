@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, CalendarDays } from "lucide-react";
 import useCajaStore from "../../store/useCajaStore";
@@ -7,7 +7,7 @@ import { CierreModal } from "@/components/CierreModal";
 
 export default function BienvenidaDashboard({ fechaActual }) {
   const {
-    resumen = {},
+    resumen,
     abrirCaja,
     cerrarCaja,
     fetchCaja,
@@ -19,48 +19,36 @@ export default function BienvenidaDashboard({ fechaActual }) {
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
 
-  // 🔹 Siempre cargar el estado de la caja al montar
+  // 🔹 Cargar resumen de caja al montar
   useEffect(() => {
-    if (fetchCaja) fetchCaja();
-  }, [fetchCaja]);
+    fetchCaja();
+  }, []);
 
-  // 🔹 Calculamos estado de caja basado en resumen actualizado
-  const estadoCaja = useMemo(() => {
+  // Determinar estado del botón y mensaje según el resumen
+  const estadoCaja = () => {
     if (resumen?.abierta)
       return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
-
     if (resumen?.aperturaHoy && resumen?.cierreHoy)
       return { color: "red", texto: "Cerrada ✅ (cerrada hoy)", boton: null };
-
     if (!resumen?.abierta && resumen?.aperturaHoy && !resumen?.cierreHoy)
       return {
         color: "yellow",
         texto: "Cerrada ⚠ (pendiente cierre)",
         boton: "Cerrar Caja",
       };
-
     return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
-  }, [resumen]);
+  };
 
-  const { color, texto, boton } = estadoCaja;
+  const { color, texto, boton } = estadoCaja();
 
-  // 🔹 Handlers simplificados: ya llaman a fetchCaja internamente
   const handleApertura = async (montos) => {
-    try {
-      await abrirCaja(montos);
-      setModalApertura(false);
-    } catch (err) {
-      console.error("Error abrir caja:", err);
-    }
+    await abrirCaja(montos);
+    setModalApertura(false);
   };
 
   const handleCierre = async (montos) => {
-    try {
-      await cerrarCaja(montos);
-      setModalCierre(false);
-    } catch (err) {
-      console.error("Error cerrar caja:", err);
-    }
+    await cerrarCaja(montos);
+    setModalCierre(false);
   };
 
   return (
@@ -71,6 +59,7 @@ export default function BienvenidaDashboard({ fechaActual }) {
         transition={{ duration: 0.4 }}
         className="bg-white/70 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/40 flex flex-col sm:flex-row justify-between items-center gap-6"
       >
+        {/* Izquierda */}
         <div>
           <h1 className="text-4xl font-extrabold text-gray-800 flex items-center gap-3">
             <CalendarDays className="text-blue-600 w-9 h-9" /> ¡Bienvenido! 👋
@@ -78,6 +67,7 @@ export default function BienvenidaDashboard({ fechaActual }) {
           <p className="text-gray-600 text-sm mt-1 capitalize">{fechaActual}</p>
         </div>
 
+        {/* Derecha */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <span className="flex items-center gap-3 text-lg font-semibold">
             <span
