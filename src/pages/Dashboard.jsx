@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   DollarSign,
@@ -14,24 +14,25 @@ import useCajaStore from "../store/useCajaStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
 import AccesosRapidos from "../components/dashboard/AccesosRapidos";
-import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
+import StockCriticoCard from "../components/dashboard/StockCriticoCard";
 import { formatMoney } from "../services/dashboardService";
 import {
   fetchVentasHoy,
   fetchGanancias,
   fetchStockCritico,
 } from "../services/dashboardService";
-import { hoyArg } from "../utils/fecha.js";
+import { hoyArg } from "../utils/fecha";
 
 export default function Dashboard() {
   const { resumen, movimientos, fetchCaja, loading, loadingCierre, cerrando } =
     useCajaStore();
+
   const [ventasHoy, setVentasHoy] = useState([]);
   const [ganHoy, setGanHoy] = useState(0);
   const [stockCritico, setStockCritico] = useState([]);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
 
-  // 🔹 Cargar todos los datos al montar el dashboard
+  // Cargar dashboard
   useEffect(() => {
     const cargarDashboard = async () => {
       setLoadingDashboard(true);
@@ -52,14 +53,13 @@ export default function Dashboard() {
         setGanHoy(ganancias.totalGanado ?? 0);
         setStockCritico(stock);
 
-        if (fetchCaja) await fetchCaja(); // sincroniza caja y movimientos
+        await fetchCaja(); // sincroniza caja y movimientos
       } catch (err) {
-        console.error("Error cargando dashboard:", err);
+        console.error("Error cargarDashboard:", err);
       } finally {
         setLoadingDashboard(false);
       }
     };
-
     cargarDashboard();
   }, [fetchCaja]);
 
@@ -74,32 +74,33 @@ export default function Dashboard() {
   });
   const hayStockBajo = stockCritico.some((p) => p.stock <= p.stockMinimo);
 
-  // 🔹 Estado de caja dinámico
-  const estadoCaja = useMemo(() => {
-    if (resumen?.abierta)
+  // Función para obtener estado de caja
+  const getEstadoCaja = () => {
+    if (!resumen)
+      return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
+    if (resumen.abierta)
       return { color: "green", texto: "Abierta ✅", boton: "Cerrar Caja" };
-
-    if (resumen?.aperturaHoy && resumen?.cierreHoy)
+    if (resumen.aperturaHoy && resumen.cierreHoy)
       return { color: "red", texto: "Cerrada ✅ (cerrada hoy)", boton: null };
-
-    if (!resumen?.abierta && resumen?.aperturaHoy && !resumen?.cierreHoy)
+    if (!resumen.abierta && resumen.aperturaHoy && !resumen.cierreHoy)
       return {
         color: "yellow",
         texto: "Cerrada ⚠ (pendiente cierre)",
         boton: "Cerrar Caja",
       };
-
     return { color: "blue", texto: "Cerrada ❌", boton: "Abrir Caja" };
-  }, [resumen]);
+  };
 
-  const { color, texto, boton } = estadoCaja;
+  const { color, texto, boton } = getEstadoCaja();
 
   return (
     <div className="p-6 space-y-10 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
       {/* Bienvenida */}
-      <BienvenidaDashboard fechaActual={fechaActual} />
+      <motion.div>
+        <BienvenidaDashboard fechaActual={fechaActual} />
+      </motion.div>
 
-      {/* KPIs principales */}
+      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <KPI
           title="Vendido hoy"
@@ -130,28 +131,23 @@ export default function Dashboard() {
       )}
 
       {/* Resumen de caja */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-6 rounded-2xl shadow-md border border-gray-100"
-      >
+      <motion.div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
         <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
           <Wallet /> Resumen de caja
         </h2>
-
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <CajaItem label="Efectivo" value={resumen?.efectivo} />
           <CajaItem label="MercadoPago" value={resumen?.mp} />
           <CajaItem label="Transferencia" value={resumen?.transferencia} />
           <CajaItem label="Total Caja" value={resumen?.total} />
         </div>
-
-        {boton && (
-          <div className="mt-4">
+        <div className="mt-4 flex gap-4">
+          {boton && (
             <button
-              onClick={() =>
-                boton === "Abrir Caja" ? fetchCaja?.() : fetchCaja?.()
-              }
+              onClick={() => {
+                if (boton === "Abrir Caja") setModalApertura(true);
+                else if (boton === "Cerrar Caja") setModalCierre(true);
+              }}
               disabled={loading || loadingCierre || cerrando}
               className={`px-6 py-2 rounded-2xl font-bold text-white shadow-lg transition-all duration-300 ${
                 boton === "Abrir Caja"
@@ -161,10 +157,8 @@ export default function Dashboard() {
             >
               {loadingCierre || cerrando ? "Cerrando..." : boton}
             </button>
-          </div>
-        )}
-
-        <p className="mt-2 font-medium text-gray-700">Estado: {texto}</p>
+          )}
+        </div>
       </motion.div>
 
       {/* Movimientos y accesos */}
@@ -187,7 +181,7 @@ export default function Dashboard() {
   );
 }
 
-// ----------------- Componentes auxiliares -----------------
+// Componentes auxiliares
 function KPI({ title, icon, value }) {
   return (
     <motion.div
