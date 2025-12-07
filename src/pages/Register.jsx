@@ -33,7 +33,8 @@ export default function Register() {
 
       const data = await res.json();
 
-      if (data.statusCode !== 200) {
+      // FIX 1: si res.ok es false => backend devolvió error
+      if (!res.ok) {
         Swal.fire({
           icon: "error",
           title: "Oops...",
@@ -43,11 +44,13 @@ export default function Register() {
         return;
       }
 
+      // FIX 2: asegurar éxito
       Swal.fire({
         icon: "success",
         title: "Cuenta creada 🎉",
         text: "Ahora podés iniciar sesión.",
       });
+
       navigate("/login");
     } catch (err) {
       console.error(err);

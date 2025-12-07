@@ -32,23 +32,27 @@ export default function Login() {
       );
 
       const loginData = await res.json();
-      if (loginData.statusCode !== 200) {
+
+      // FIX: si res.ok es false => error del backend
+      if (!res.ok) {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Credenciales inválidas",
+          text: loginData.message || "Credenciales inválidas",
         });
         setLoading(false);
         return;
       }
 
+      // Obtener usuario online
       const res2 = await fetch(
         `${import.meta.env.VITE_API_URL}/sessions/online`,
         { method: "GET", credentials: "include" }
       );
+
       const userData = await res2.json();
 
-      if (!userData?.user) {
+      if (!res2.ok || !userData?.user) {
         Swal.fire({
           icon: "error",
           title: "Error",
