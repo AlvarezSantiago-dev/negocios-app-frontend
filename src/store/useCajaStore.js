@@ -1,17 +1,19 @@
 import { create } from "zustand";
 import api from "../services/api";
 
-const hoy = () => new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+const hoy = () =>
+  new Date()
+    .toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })
+    .split(" ")[0];
 
 const useCajaStore = create((set, get) => ({
-  resumen: {},
+  resumen: {}, // estado principal de la caja
   movimientos: [],
   cierreHoy: null,
   loading: false,
   loadingCierre: false,
   cerrando: false,
 
-  // Traer resumen y movimientos
   fetchCaja: async () => {
     set({ loading: true });
     try {
@@ -32,12 +34,11 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // Apertura de caja
   abrirCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loading: true });
     try {
       await api.post("/caja/abrir", { efectivo, mp, transferencia });
-      await get().fetchCaja(); // refresca resumen y movimientos
+      await get().fetchCaja();
     } catch (err) {
       console.error("Error abrirCaja:", err);
     } finally {
@@ -45,13 +46,11 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // Cierre de caja
-  cerrarCaja: async () => {
+  cerrarCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loadingCierre: true, cerrando: true });
     try {
-      await api.post("/caja/cerrar");
+      await api.post("/caja/cerrar", { efectivo, mp, transferencia });
       await get().fetchCaja();
-      await get().fetchCierreData();
     } catch (err) {
       console.error("Error cerrarCaja:", err);
     } finally {
@@ -59,49 +58,13 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // Crear movimiento
   crearMovimiento: async (data) => {
     try {
       await api.post("/caja/movimiento", data);
-      await get().fetchCaja(); // refresca resumen y movimientos
+      await get().fetchCaja();
     } catch (err) {
       console.error("Error crearMovimiento:", err);
     }
   },
-
-  // Editar movimiento
-  editarMovimiento: async (_id, data) => {
-    try {
-      await api.put(`/caja/movimiento/${_id}`, data);
-      await get().fetchCaja();
-    } catch (err) {
-      console.error("Error editarMovimiento:", err);
-    }
-  },
-
-  // Eliminar movimiento
-  eliminarMovimiento: async (_id) => {
-    try {
-      await api.delete(`/caja/movimiento/${_id}`);
-      await get().fetchCaja();
-    } catch (err) {
-      console.error("Error eliminarMovimiento:", err);
-    }
-  },
-
-  // Traer datos del cierre de hoy
-  fetchCierreData: async () => {
-    try {
-      const res = await api.get("/caja/cierres/ultimos7");
-      const hoyFecha = hoy();
-      const cierre = res.data.response?.find(
-        (c) => new Date(c.fecha).toISOString().split("T")[0] === hoyFecha
-      );
-      set({ cierreHoy: cierre || null });
-    } catch (err) {
-      console.error("Error fetchCierreData:", err);
-    }
-  },
 }));
-
 export default useCajaStore;

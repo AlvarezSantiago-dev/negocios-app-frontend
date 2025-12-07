@@ -1,35 +1,38 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, CalendarDays } from "lucide-react";
-import useDashboardStore from "../../store/useDashboardStore";
+import useCajaStore from "../../store/useCajaStore";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
-import useCajaStore from "../../store/useCajaStore";
 
 export default function BienvenidaDashboard({ fechaActual }) {
-  const { caja, actualizarCaja, syncDashboard } = useDashboardStore();
-  const { resumen, abrirCaja, cerrarCaja, loading, loadingCierre, cerrando } =
-    useCajaStore();
+  const {
+    resumen,
+    abrirCaja,
+    cerrarCaja,
+    fetchCaja,
+    loading,
+    loadingCierre,
+    cerrando,
+  } = useCajaStore();
 
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
 
-  // 🔹 Actualizamos caja al cargar
+  // 🔹 Cargar caja al montar
   useEffect(() => {
-    actualizarCaja();
+    fetchCaja();
   }, []);
 
   const botonActivo = !resumen?.abierta && !resumen?.aperturaHoy;
 
   const handleApertura = async (montos) => {
     await abrirCaja(montos);
-    await syncDashboard(); // sincroniza todo el dashboard
     setModalApertura(false);
   };
 
   const handleCierre = async (montos) => {
     await cerrarCaja(montos);
-    await syncDashboard(); // sincroniza todo el dashboard
     setModalCierre(false);
   };
 
@@ -102,7 +105,6 @@ export default function BienvenidaDashboard({ fechaActual }) {
         onClose={() => setModalApertura(false)}
         onConfirm={handleApertura}
       />
-
       <CierreModal
         open={modalCierre}
         onClose={() => setModalCierre(false)}

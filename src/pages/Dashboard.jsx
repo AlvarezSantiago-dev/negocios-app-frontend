@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import useDashboardStore from "../store/useDashboardStore"; // ✅ import corregido
+import useCajaStore from "../store/useCajaStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
 import AccesosRapidos from "../components/dashboard/AccesosRapidos";
@@ -14,21 +14,40 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { formatMoney } from "../services/dashboardService";
+import {
+  fetchVentasHoy,
+  fetchGanancias,
+  fetchStockCritico,
+} from "../services/dashboardService";
 
 export default function Dashboard() {
-  const {
-    ventasHoy,
-    ganHoy,
-    stockCritico,
-    caja,
-    movimientos,
-    loading,
-    fetchDashboard,
-  } = useDashboardStore();
+  const { resumen, movimientos, fetchCaja } = useCajaStore();
+  const [ventasHoy, setVentasHoy] = useState([]);
+  const [ganHoy, setGanHoy] = useState(0);
+  const [stockCritico, setStockCritico] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+    const cargarDashboard = async () => {
+      setLoading(true);
+      const fechaISO = new Date().toISOString().split("T")[0];
+      const [ventas, ganancias, stock] = await Promise.all([
+        fetchVentasHoy(fechaISO),
+        fetchGanancias(
+          new Date().getFullYear(),
+          new Date().getMonth() + 1,
+          new Date().getDate()
+        ),
+        fetchStockCritico(),
+      ]);
+      setVentasHoy(ventas);
+      setGanHoy(ganancias.totalGanado ?? 0);
+      setStockCritico(stock);
+      await fetchCaja(); // sincroniza caja y movimientos
+      setLoading(false);
+    };
+    cargarDashboard();
+  }, []);
 
   if (loading) return <p className="p-6">Cargando...</p>;
 
@@ -76,20 +95,15 @@ export default function Dashboard() {
         </div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="bg-white p-6 rounded-2xl shadow-md border border-gray-100"
-      >
+      <motion.div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
         <h2 className="text-xl font-semibold flex items-center gap-2 mb-4">
           <Wallet /> Resumen de caja
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <CajaItem label="Efectivo" value={caja.efectivo} />
-          <CajaItem label="MercadoPago" value={caja.mp} />
-          <CajaItem label="Transferencia" value={caja.transferencia} />
-          <CajaItem label="Total Caja" value={caja.total} />
+          <CajaItem label="Efectivo" value={resumen?.efectivo} />
+          <CajaItem label="MercadoPago" value={resumen?.mp} />
+          <CajaItem label="Transferencia" value={resumen?.transferencia} />
+          <CajaItem label="Total Caja" value={resumen?.total} />
         </div>
       </motion.div>
 
