@@ -1,33 +1,26 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useCajaStore from "../store/useCajaStore";
 
 export default function TestDashboard() {
   const cajaStore = useCajaStore();
+  const [log, setLog] = useState([]);
+
+  const appendLog = (msg) => setLog((prev) => [...prev, msg]);
 
   useEffect(() => {
     const runTest = async () => {
-      const appendLog = (msg) => console.log(msg);
+      appendLog("🔹 Iniciando test...");
 
-      appendLog("🔹 Iniciando test de Dashboard...");
-
-      // 1️⃣ Resumen inicial
       await cajaStore.fetchCaja();
       appendLog("✅ Dashboard cargado");
       appendLog("Resumen inicial caja: " + JSON.stringify(cajaStore.resumen));
-      appendLog(
-        "Movimientos iniciales: " + JSON.stringify(cajaStore.movimientos)
-      );
 
-      // 2️⃣ Abrir caja
-      appendLog("🔹 Abriendo caja...");
+      // Abrir caja
       await cajaStore.abrirCaja({ efectivo: 1000, mp: 500, transferencia: 0 });
-      await cajaStore.fetchCaja(); // ⚡ refresca resumen y movimientos
-      appendLog("✅ Caja abierta");
-      appendLog("Resumen caja: " + JSON.stringify(cajaStore.resumen));
-      appendLog("Movimientos caja: " + JSON.stringify(cajaStore.movimientos));
+      await cajaStore.fetchCaja();
+      appendLog("✅ Caja abierta: " + JSON.stringify(cajaStore.resumen));
 
-      // 3️⃣ Crear movimiento de prueba
-      appendLog("🔹 Creando movimiento de prueba...");
+      // Crear movimiento
       await cajaStore.crearMovimiento({
         tipo: "ingreso",
         motivo: "Venta prueba",
@@ -35,23 +28,16 @@ export default function TestDashboard() {
         metodo: "efectivo",
       });
       await cajaStore.fetchCaja();
-      appendLog("✅ Movimiento creado");
-      appendLog("Resumen caja: " + JSON.stringify(cajaStore.resumen));
-      appendLog("Movimientos caja: " + JSON.stringify(cajaStore.movimientos));
+      appendLog("✅ Movimiento creado: " + JSON.stringify(cajaStore.resumen));
 
-      // 4️⃣ Cerrar caja
-      appendLog("🔹 Cerrando caja...");
+      // Cerrar caja
       await cajaStore.cerrarCaja({
         efectivo: cajaStore.resumen.efectivo,
         mp: cajaStore.resumen.mp,
         transferencia: cajaStore.resumen.transferencia,
       });
       await cajaStore.fetchCaja();
-      appendLog("✅ Caja cerrada");
-      appendLog("Resumen final caja: " + JSON.stringify(cajaStore.resumen));
-      appendLog(
-        "Movimientos finales: " + JSON.stringify(cajaStore.movimientos)
-      );
+      appendLog("✅ Caja cerrada: " + JSON.stringify(cajaStore.resumen));
 
       appendLog("🔹 Test completo");
     };
@@ -62,7 +48,9 @@ export default function TestDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">Test Dashboard</h1>
-      <p>Revisá la consola para los logs del flujo completo de caja.</p>
+      {log.map((l, i) => (
+        <p key={i}>{l}</p>
+      ))}
     </div>
   );
 }
