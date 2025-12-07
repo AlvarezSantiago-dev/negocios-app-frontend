@@ -86,8 +86,11 @@ export async function fetchCajaMovimientos(limit = 5) {
 }
 
 // --- CIERRES ---
-export async function fetchCierres() {
-  const res = await fetch(`${API_CAJA}/cierres`, { credentials: "include" });
+export async function fetchUltimosCierres() {
+  const res = await fetch(`${API_CAJA}/cierres/ultimos7`, {
+    credentials: "include",
+  });
+
   if (!res.ok) throw new Error("No se pudieron obtener los cierres");
   const data = await res.json();
   return data.response ?? [];
@@ -101,4 +104,3 @@ export async function fetchCierreHoy() {
 }
 
 // Alias para compatibilidad con import antiguos
-export { fetchCierres as fetchUltimosCierres };
