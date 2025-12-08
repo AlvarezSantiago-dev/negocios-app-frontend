@@ -39,7 +39,11 @@ export default function MovimientosTable({ data = [] }) {
                   <td className="py-3 font-medium">$ {m.monto}</td>
                   <td className="py-3 capitalize">{m.metodo}</td>
                   <td className="py-3">
-                    {new Date(m.fecha).toLocaleTimeString("es-AR")}
+                    {new Date(m.fecha).toLocaleTimeString("es-AR", {
+                      timeZone: "America/Argentina/Buenos_Aires",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </td>
                 </motion.tr>
               ))}

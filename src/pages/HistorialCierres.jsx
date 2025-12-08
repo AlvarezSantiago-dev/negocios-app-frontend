@@ -14,10 +14,21 @@ export default function HistorialCierres() {
     })();
   }, []);
 
+  const formatMoney = (n) =>
+    (n ?? 0).toLocaleString("es-AR", { minimumFractionDigits: 2 });
+
+  const formatFecha = (f) =>
+    new Date(f).toLocaleDateString("es-AR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-8">
       <motion.h1
-        className="text-3xl font-bold text-gray-800"
+        className="text-4xl font-extrabold text-gray-900 tracking-tight"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -25,32 +36,34 @@ export default function HistorialCierres() {
       </motion.h1>
 
       {cierres.length === 0 && (
-        <p className="text-gray-500">No hay cierres registrados.</p>
+        <p className="text-gray-600 text-lg">No hay cierres registrados.</p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {cierres.map((cierre) => (
           <motion.div
             key={cierre._id}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.03 }}
             onClick={() => setSelected(cierre)}
-            className="
-              cursor-pointer border rounded-xl p-5 shadow-md
-              bg-white hover:shadow-lg transition
-            "
+            className="cursor-pointer rounded-2xl bg-white border shadow-md hover:shadow-xl transition p-6"
           >
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold text-lg text-gray-800">
-                {new Date(cierre.fecha).toLocaleDateString("es-AR")}
-              </span>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">
-                Total: ${cierre.total}
-              </span>
-            </div>
-            <div className="text-sm text-gray-600">
-              {cierre.cantidadVentas} ventas • Usuario: {cierre.usuario}
+            <p className="text-sm text-gray-500 mb-1">
+              {formatFecha(cierre.fecha)}
+            </p>
+
+            <p className="text-xl font-bold text-gray-900 mb-2">
+              Total del día: ${formatMoney(cierre.total)}
+            </p>
+
+            <div className="text-gray-700 text-sm">
+              <p>
+                <b>Ventas:</b> {cierre.cantidadVentas}
+              </p>
+              <p>
+                <b>Usuario:</b> {cierre.usuario}
+              </p>
             </div>
           </motion.div>
         ))}
