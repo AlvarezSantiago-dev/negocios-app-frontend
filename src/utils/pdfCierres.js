@@ -1,4 +1,3 @@
-// src/utils/pdfCierres.js
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -50,6 +49,7 @@ function drawHeader(doc, titulo) {
 
   // fecha generación (alineada a la derecha)
   doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
   doc.text(
     `Generado: ${formatFechaArg(Date.now())} ${formatHoraArg(Date.now())}`,
     196,
@@ -102,6 +102,12 @@ export function generarPDFCierreIndividual(cierre) {
     ["Apertura total:", `$ ${money(cierre.apertura)}`],
     ["Total vendido:", `$ ${money(cierre.totalVendido)}`],
     ["Ganancia total:", `$ ${money(cierre.gananciaTotal)}`],
+    [
+      "Ganancia neta:",
+      `$ ${money(
+        cierre.gananciaNeta ?? cierre.gananciaTotal - cierre.egresos
+      )}`,
+    ],
     ["Ingresos (total):", `$ ${money(cierre.ingresos)}`],
     ["Egresos (total):", `$ ${money(cierre.egresos)}`],
     ["Saldo final (caja):", `$ ${money(cierre.total)}`],
@@ -116,9 +122,6 @@ export function generarPDFCierreIndividual(cierre) {
     styles: { fontSize: 10 },
     margin: { left: 14, right: 14 },
     tableLineWidth: 0,
-    didDrawCell: (data) => {
-      // dejamos sin nada extra
-    },
   });
 
   let y = doc.lastAutoTable.finalY + 8;
@@ -175,10 +178,7 @@ export function generarPDFCierreIndividual(cierre) {
     ["Concepto", "Valor"],
     ["Apertura total", `$ ${money(cierre.apertura)}`],
     ["Ingresos (total)", `$ ${money(cierre.ingresos)}`],
-    [
-      "Egresos (total)",
-      `$ ${money.egresos ? money(cierre.egresos) : money(cierre.egresos)}`,
-    ],
+    ["Egresos (total)", `$ ${money(cierre.egresos)}`],
   ];
 
   autoTable(doc, {
@@ -257,7 +257,6 @@ export function generarPDFCierreIndividual(cierre) {
           2: { halign: "right", cellWidth: 28 },
           3: { halign: "right", cellWidth: 28 },
         },
-        didDrawPage: (data) => {},
       });
 
       y = doc.lastAutoTable.finalY + 8;
@@ -285,6 +284,12 @@ export function generarPDFCierreIndividual(cierre) {
     ["Apertura (total)", `$ ${money(cierre.apertura)}`],
     ["Total vendido", `$ ${money(cierre.totalVendido)}`],
     ["Ganancia total", `$ ${money(cierre.gananciaTotal)}`],
+    [
+      "Ganancia neta",
+      `$ ${money(
+        cierre.gananciaNeta ?? cierre.gananciaTotal - cierre.egresos
+      )}`,
+    ],
     ["Ingresos (total)", `$ ${money(cierre.ingresos)}`],
     ["Egresos (total)", `$ ${money(cierre.egresos)}`],
     ["Saldo final (caja)", `$ ${money(cierre.total)}`],

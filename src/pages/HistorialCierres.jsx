@@ -57,9 +57,12 @@ export default function HistorialCierres() {
               Total del día: ${formatMoney(cierre.total)}
             </p>
 
-            <div className="text-gray-700 text-sm">
+            <div className="text-gray-700 text-sm space-y-1">
               <p>
                 <b>Ventas:</b> {cierre.cantidadVentas}
+              </p>
+              <p>
+                <b>Ganancia neta:</b> ${formatMoney(cierre.gananciaNeta)}
               </p>
               <p>
                 <b>Usuario:</b> {cierre.usuario}

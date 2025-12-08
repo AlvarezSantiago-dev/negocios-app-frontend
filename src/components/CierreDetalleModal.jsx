@@ -91,6 +91,9 @@ export default function CierreDetalleModal({ cierre, onClose }) {
                 <b>Ganancia:</b> ${formatMoney(cierre.gananciaTotal)}
               </p>
               <p>
+                <b>Ganancia neta:</b> ${formatMoney(cierre.gananciaNeta)}
+              </p>
+              <p>
                 <b>Ingresos:</b> ${formatMoney(cierre.ingresos)}
               </p>
               <p>
