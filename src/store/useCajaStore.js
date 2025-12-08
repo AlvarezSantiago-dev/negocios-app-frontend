@@ -4,6 +4,7 @@ import { hoyArg } from "../utils/fecha";
 
 const useCajaStore = create((set, get) => ({
   resumen: {},
+  allmovimientos: [],
   movimientos: [],
   loading: false,
   loadingCierre: false,
@@ -22,11 +23,12 @@ const useCajaStore = create((set, get) => ({
 
       // Últimos 5 movimientos (sin filtrar por fecha)
       const resMovimientos = await api.get("/caja/movimientos?limit=5");
-
+      const allmovimientos = await api.get("/caja/movimientos?limit=100");
       set({
         resumen: resResumen.data.response || {},
         movimientos: resMovimientos.data.response || [],
         loading: false,
+        allmovimientos: allmovimientos.data.response || [],
       });
     } catch (err) {
       console.error("Error fetchCaja:", err);

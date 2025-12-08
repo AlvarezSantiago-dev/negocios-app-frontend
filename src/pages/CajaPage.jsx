@@ -49,7 +49,7 @@ function CajaKPI({ label, value, icon, color, tooltip }) {
 export default function CajaPage() {
   const {
     resumen = {},
-    movimientos = [],
+    allmovimientos = [],
     fetchCaja,
     crearMovimiento,
     editarMovimiento,
@@ -164,7 +164,7 @@ export default function CajaPage() {
 
         {/* Movimientos */}
         <MovimientosTable
-          data={movimientos || []}
+          data={allmovimientos || []}
           onEdit={(m) => {
             if (!m) return;
             setEditing(m);
