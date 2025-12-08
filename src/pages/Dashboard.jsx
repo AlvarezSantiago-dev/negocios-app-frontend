@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import useCajaStore from "../store/useCajaStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
 import MovimientosTable from "../components/dashboard/MovimientosTable";
-import AccesosRapidos from "../components/dashboard/AccesosRapidos";
+import AccesosRapidos from "@/components/dashboard/AccesosRapidos";
 import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
 import {
   DollarSign,
@@ -57,11 +57,21 @@ export default function Dashboard() {
 
   const totalHoy = ventasHoy.reduce((acc, v) => acc + (v.totalVenta ?? 0), 0);
   const cantHoy = ventasHoy.length;
+
+  // Calcular egresos del día
+  const totalEgresos = movimientos
+    .filter((m) => m.tipo === "egreso")
+    .reduce((acc, m) => acc + (m.monto ?? 0), 0);
+
+  // Ganancia neta = ganancia bruta - egresos
+  const gananciaNeta = ganHoy - totalEgresos;
+
   const fechaActual = new Date().toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+
   const hayStockBajo = stockCritico.some((p) => p.stock <= p.stockMinimo);
 
   return (
@@ -77,9 +87,9 @@ export default function Dashboard() {
           value={`$${formatMoney(totalHoy)}`}
         />
         <KPI
-          title="Ganancia hoy"
+          title="Ganancia neta"
           icon={<TrendingUp size={18} />}
-          value={`$${formatMoney(ganHoy)}`}
+          value={`$${formatMoney(gananciaNeta)}`}
         />
         <KPI
           title="Ventas hoy"
