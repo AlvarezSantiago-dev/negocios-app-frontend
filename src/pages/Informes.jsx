@@ -1,205 +1,244 @@
 import React, { useEffect, useState } from "react";
-import api from "../services/api";
-import "../styles/informes.css";
+import {
+  fetchVentasDiarias,
+  fetchVentasMensuales,
+  fetchGanancias,
+  fetchUltimos7Dias,
+} from "@/services/informesService";
+import { motion } from "framer-motion";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import {
+  CalendarDays,
+  TrendingUp,
+  DollarSign,
+  LineChart as LineChartIcon,
+} from "lucide-react";
 
 export default function Informes() {
-  const [ventasDiarias, setVentasDiarias] = useState([]);
-  const [ventasMensuales, setVentasMensuales] = useState([]);
-  const [ganancias, setGanancias] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const hoy = new Date().toISOString().substring(0, 10);
+  const year = new Date().getFullYear();
+  const month = new Date().getMonth() + 1;
+
   const [tab, setTab] = useState("diarias");
-  const [totalVentasHoy, setTotalVentasHoy] = useState(0);
-  const [totalVentasMes, setTotalVentasMes] = useState(0);
+  const [diarias, setDiarias] = useState([]);
+  const [mensuales, setMensuales] = useState([]);
+  const [ganancias, setGananciasState] = useState({});
+  const [ultimos7, setUltimos7] = useState([]);
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    cargarInformes();
+    cargar();
   }, []);
 
-  const cargarInformes = async () => {
+  async function cargar() {
     setLoading(true);
-    try {
-      const hoy = new Date().toISOString().split("T")[0];
-      const año = new Date().getFullYear();
-      const mes = new Date().getMonth() + 1;
 
-      const [diariasRes, mensualRes, ganancRes, ventasRes] = await Promise.all([
-        api
-          .get(`/ventas/informes/diarias?fecha=${hoy}`)
-          .catch(() => ({ data: [] })),
-        api
-          .get(`/ventas/informes/mensuales?año=${año}&mes=${mes}`)
-          .catch(() => ({ data: [] })),
-        api.get("/ventas/informes/ganancias").catch(() => ({ data: [] })),
-        api.get("/ventas").catch(() => ({ data: [] })),
-      ]);
+    const [d, m, g, u7] = await Promise.all([
+      fetchVentasDiarias(hoy),
+      fetchVentasMensuales(year, month),
+      fetchGanancias(year, month),
+      fetchUltimos7Dias(),
+    ]);
 
-      setVentasDiarias(diariasRes.data || []);
-      setVentasMensuales(mensualRes.data || []);
-      setGanancias(ganancRes.data || []);
+    setDiarias(d);
+    setMensuales(m);
+    setGananciasState(g);
+    setUltimos7(u7);
 
-      // Calcular totales
-      const totalHoy = (ventasRes.data || [])
-        .filter(
-          (v) =>
-            new Date(v.createdAt || v.fecha).toDateString() ===
-            new Date().toDateString()
-        )
-        .reduce((sum, v) => sum + (v.total || 0), 0);
-      setTotalVentasHoy(totalHoy);
-
-      const ahora = new Date();
-      const totalMes = (ventasRes.data || [])
-        .filter((v) => {
-          const fecha = new Date(v.createdAt || v.fecha);
-          return (
-            fecha.getFullYear() === ahora.getFullYear() &&
-            fecha.getMonth() === ahora.getMonth()
-          );
-        })
-        .reduce((sum, v) => sum + (v.total || 0), 0);
-      setTotalVentasMes(totalMes);
-    } catch (err) {
-      console.error("Error al cargar informes:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(false);
+  }
 
   if (loading)
     return (
-      <div>
-        <p>Cargando informes...</p>
-      </div>
+      <p className="p-6 animate-pulse text-gray-600">Cargando informes...</p>
     );
 
   return (
-    <div className="informes-container">
-      <h1 className="text-2xl font-bold mb-6">📊 Informes y Reportes</h1>
+    <div className="p-6 space-y-10 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+      {/* Titulo */}
+      <motion.h1
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-3xl font-bold flex items-center gap-3"
+      >
+        <LineChartIcon /> Informes y Reportes
+      </motion.h1>
 
-      {/* Resumen rápido */}
-      <div className="info-cards">
-        <div className="info-card">
-          <h3>Ventas Hoy</h3>
-          <p className="amount">${totalVentasHoy.toFixed(2)}</p>
-        </div>
-        <div className="info-card">
-          <h3>Ventas del Mes</h3>
-          <p className="amount">${totalVentasMes.toFixed(2)}</p>
-        </div>
+      {/* KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <KPI
+          icon={<CalendarDays />}
+          label="Ventas del Día"
+          value={`$${diarias.totalVendido ?? 0}`}
+        />
+        <KPI
+          icon={<TrendingUp />}
+          label="Ganancia del Día"
+          value={`$${diarias.gananciaTotal ?? 0}`}
+        />
+        <KPI
+          icon={<DollarSign />}
+          label="Ganancia Mensual"
+          value={`$${ganancias.totalGanado ?? 0}`}
+        />
       </div>
 
+      {/* Últimos 7 días */}
+      <Card title="Últimos 7 días">
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={ultimos7}>
+            <XAxis dataKey="fecha" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="totalVendido" strokeWidth={3} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+
       {/* Tabs */}
-      <div className="tabs-bar">
+      <div className="flex gap-3 border-b border-gray-300 pb-2">
         {["diarias", "mensuales", "ganancias"].map((t) => (
           <button
             key={t}
-            className={`tab-link ${tab === t ? "active" : ""}`}
+            className={`px-4 py-2 rounded-md ${
+              tab === t
+                ? "bg-blue-600 text-white shadow"
+                : "bg-white text-gray-700 border"
+            }`}
             onClick={() => setTab(t)}
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t.toUpperCase()}
           </button>
         ))}
       </div>
 
-      {/* Tab Ventas Diarias */}
+      {/* TAB - DIARIAS */}
       {tab === "diarias" && (
-        <div className="tab-section">
-          <h2>Ventas Diarias</h2>
-          {ventasDiarias.length > 0 ? (
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Cantidad</th>
-                  <th>Total</th>
-                  <th>Método</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ventasDiarias.map((v, i) => (
-                  <tr key={i}>
-                    <td>
-                      {new Date(v.createdAt || v.fecha).toLocaleTimeString()}
-                    </td>
-                    <td>{v.items?.length || 1}</td>
-                    <td>${v.total || 0}</td>
-                    <td>{v.metodoPago || "efectivo"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Sin datos</p>
-          )}
-        </div>
+        <Card title="Ventas Diarias">
+          <Table
+            headers={["Hora", "Cant.", "Total", "Método"]}
+            rows={(diarias.ventas ?? []).map((v) => [
+              new Date(v.fecha).toLocaleTimeString("es-AR"),
+              v.items?.length ?? 1,
+              `$${v.totalVenta ?? 0}`,
+              v.metodoPago ?? "Efectivo",
+            ])}
+          />
+        </Card>
       )}
 
-      {/* Tab Ventas Mensuales */}
+      {/* TAB - MENSUALES */}
       {tab === "mensuales" && (
-        <div className="tab-section">
-          <h2>Ventas Mensuales</h2>
-          {ventasMensuales.length > 0 ? (
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Total Día</th>
-                  <th>Transacciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ventasMensuales.map((v, i) => (
-                  <tr key={i}>
-                    <td>
-                      {new Date(v.fecha || v.createdAt).toLocaleDateString()}
-                    </td>
-                    <td>${v.totalDia || v.total || 0}</td>
-                    <td>{v.cantidad || 1}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Sin datos</p>
-          )}
-        </div>
+        <Card title="Ventas Mensuales">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={mensuales}>
+              <XAxis dataKey="fecha" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="totalDia" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
       )}
 
-      {/* Tab Ganancias */}
+      {/* TAB - GANANCIAS */}
       {tab === "ganancias" && (
-        <div className="tab-section">
-          <h2>Análisis de Ganancias</h2>
-          {ganancias.length > 0 ? (
-            <table className="report-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Cantidad Vendida</th>
-                  <th>Ganancia Unitaria</th>
-                  <th>Ganancia Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ganancias.map((g, i) => (
-                  <tr key={i}>
-                    <td>{g.nombre || g.productoId}</td>
-                    <td>{g.cantidadVendida || 0}</td>
-                    <td>${g.gananciaUnitaria || 0}</td>
-                    <td className="total">${g.gananciaTotal || 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Sin datos de ganancias</p>
-          )}
-        </div>
+        <Card title="Ganancias por Producto">
+          <Table
+            headers={["Producto", "Cantidad", "Unit.", "Total"]}
+            rows={(ganancias.detalles ?? []).map((g) => [
+              g.nombre,
+              g.cantidadVendida,
+              `$${g.gananciaUnitaria}`,
+              `$${g.gananciaTotal}`,
+            ])}
+          />
+        </Card>
       )}
 
       {/* Botón actualizar */}
-      <button className="btn-actualizar" onClick={cargarInformes}>
+      <button
+        onClick={cargar}
+        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl shadow"
+      >
         🔄 Actualizar Informes
       </button>
     </div>
+  );
+}
+
+function KPI({ icon, label, value }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-2xl shadow p-5 border border-gray-100"
+    >
+      <div className="flex items-center gap-2 text-gray-500">
+        {icon} {label}
+      </div>
+      <div className="text-3xl font-bold mt-2">{value}</div>
+    </motion.div>
+  );
+}
+
+function Card({ title, children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white p-6 rounded-2xl shadow border border-gray-100 space-y-4"
+    >
+      <h2 className="text-xl font-semibold">{title}</h2>
+      {children}
+    </motion.div>
+  );
+}
+
+function Table({ headers, rows }) {
+  return (
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="bg-gray-100 text-left text-gray-600">
+          {headers.map((h, i) => (
+            <th key={i} className="p-2 border-b">
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.length > 0 ? (
+          rows.map((r, i) => (
+            <tr key={i} className="hover:bg-gray-50">
+              {r.map((cell, j) => (
+                <td key={j} className="p-2 border-b text-gray-700">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td
+              colSpan={headers.length}
+              className="p-3 text-center text-gray-500"
+            >
+              No hay datos...
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
   );
 }
