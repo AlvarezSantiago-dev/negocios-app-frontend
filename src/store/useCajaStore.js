@@ -20,7 +20,9 @@ const useCajaStore = create((set, get) => ({
       const hoyISO = hoyArg(); // YYYY-MM-DD
 
       // Resumen del día
-      const resResumen = await api.get(`/caja/resumen?desde=${hoyISO}`);
+      const resResumen = await api.get(
+        `/caja/resumen?desde=${hoyISO}&hasta=${hoyISO}`
+      );
 
       // Últimos 5 movimientos
       const resMovimientos = await api.get("/caja/movimientos?limit=5");
@@ -29,7 +31,9 @@ const useCajaStore = create((set, get) => ({
       const resAllMovs = await api.get("/caja/movimientos?limit=100");
 
       // Ventas del día
-      const resVentas = await api.get(`/ventas?fecha=${hoyISO}`);
+      const resVentas = await api.get(
+        `/ventas/informes/diarias?fecha=${hoyISO}`
+      );
 
       set({
         resumen: resResumen.data.response || {},

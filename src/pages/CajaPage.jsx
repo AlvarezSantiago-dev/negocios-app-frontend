@@ -1,3 +1,6 @@
+// Redesigned CajaPage Component
+// (All logic preserved, only visual/layout changes)
+
 import { useState, useEffect } from "react";
 import useCajaStore from "../store/useCajaStore";
 import MovimientosTable from "../components/MovimientosTable";
@@ -20,30 +23,34 @@ import { Wallet, DollarSign, Smartphone, RefreshCcw, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatMoney } from "../services/dashboardService";
 
-function CajaKPI({ label, value, icon, color, tooltip }) {
+function KPIBox({ label, value, icon, color, tooltip }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="bg-white/80 backdrop-blur-md rounded-2xl p-5 shadow-md border border-white/40 hover:shadow-lg transition"
+      transition={{ duration: 0.2 }}
     >
-      <div className="flex justify-between items-center text-gray-700">
-        <span className="flex items-center gap-1 font-medium">
-          {icon} {label}
-          {tooltip && Tooltip && TooltipTrigger && TooltipContent && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="w-4 h-4 text-gray-400 cursor-pointer" />
-              </TooltipTrigger>
-              <TooltipContent>{tooltip}</TooltipContent>
-            </Tooltip>
-          )}
-        </span>
-        <span className="text-2xl font-bold" style={{ color }}>
-          {value || "$0"}
-        </span>
-      </div>
+      <Card className="rounded-2xl shadow-lg border border-gray-200 bg-white/95 backdrop-blur-md hover:shadow-xl transition-all">
+        <CardContent className="p-5">
+          <div className="flex justify-between items-center text-gray-700">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              {icon}
+              {label}
+              {tooltip && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-4 h-4 text-gray-400 cursor-pointer" />
+                  </TooltipTrigger>
+                  <TooltipContent>{tooltip}</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+            <span className="text-2xl font-extrabold" style={{ color }}>
+              {value}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }
@@ -91,53 +98,59 @@ export default function CajaPage() {
 
   return (
     <TooltipProvider>
-      <div className="p-6 space-y-8 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
-        <motion.h2
-          className="text-3xl font-bold text-gray-800"
+      <div className="p-8 space-y-10 bg-gray-50 min-h-screen">
+        {/* Header */}
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
+          className="flex justify-between items-center"
         >
-          Caja
-        </motion.h2>
+          <h2 className="text-4xl font-bold text-gray-800 tracking-tight">
+            Caja
+          </h2>
+          <Button
+            variant="outline"
+            onClick={() => fetchCaja && fetchCaja()}
+            className="flex gap-2 items-center"
+          >
+            <RefreshCcw className="w-4 h-4" /> Actualizar
+          </Button>
+        </motion.div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-          <CajaKPI
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <KPIBox
             label="Total Caja"
             value={`$${formatMoney(resumen?.total || 0)}`}
             icon={<Wallet className="w-5 h-5 opacity-70" />}
-            color="#1e40af"
-            tooltip="Suma de efectivo, MP y transferencias."
+            color="#0f172a"
+            tooltip="Suma de todos los métodos de ingreso."
           />
-          <CajaKPI
+          <KPIBox
             label="Efectivo"
             value={`$${formatMoney(resumen?.efectivo || 0)}`}
             icon={<DollarSign className="w-5 h-5 opacity-70" />}
             color="#065f46"
             tooltip="Dinero físico en caja."
           />
-          <CajaKPI
+          <KPIBox
             label="Mercado Pago"
             value={`$${formatMoney(resumen?.mp || 0)}`}
             icon={<Smartphone className="w-5 h-5 opacity-70" />}
-            color="#0c4a6e"
-            tooltip="Ventas recibidas por Mercado Pago."
+            color="#0369a1"
+            tooltip="Ingresos a través de Mercado Pago."
           />
-          <CajaKPI
+          <KPIBox
             label="Transferencia"
             value={`$${formatMoney(resumen?.transferencia || 0)}`}
             icon={<Smartphone className="w-5 h-5 opacity-70" />}
             color="#854d0e"
-            tooltip="Ventas recibidas por transferencias bancarias."
+            tooltip="Ingresos por transferencias bancarias."
           />
         </div>
 
-        {/* Botones */}
-        <motion.div
-          className="flex flex-wrap gap-3 mt-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 pt-2">
           <Button
             onClick={() => setModalApertura(true)}
             disabled={resumen?.aperturaHoy || loading}
@@ -161,47 +174,55 @@ export default function CajaPage() {
           <Button variant="secondary" onClick={() => setModalMov(true)}>
             Nuevo Movimiento
           </Button>
+        </div>
 
-          <Button
-            variant="outline"
-            onClick={() => fetchCaja && fetchCaja()}
-            className="flex gap-2 items-center"
-          >
-            <RefreshCcw className="w-4 h-4" /> Refrescar
-          </Button>
-        </motion.div>
+        {/* Tables */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+          <Card className="shadow-md border border-gray-200 bg-white rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">
+                Movimientos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MovimientosTable
+                data={allmovimientos || []}
+                onEdit={(m) => {
+                  if (!m) return;
+                  setEditing(m);
+                  setModalMov(true);
+                }}
+                onDelete={(id) => eliminarMovimiento?.(id)}
+              />
+            </CardContent>
+          </Card>
 
-        {/* Movimientos */}
-        <MovimientosTable
-          data={allmovimientos || []}
-          onEdit={(m) => {
-            if (!m) return;
-            setEditing(m);
-            setModalMov(true);
-          }}
-          onDelete={(id) => eliminarMovimiento?.(id)}
-        />
-        <VentasTable
-          data={ventas}
-          onEdit={(v) => {
-            setEditingVenta(v);
-            setModalVenta(true);
-          }}
-          onDelete={(id) => eliminarVenta(id)}
-        />
+          <Card className="shadow-md border border-gray-200 bg-white rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Ventas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VentasTable
+                data={ventas}
+                onEdit={(v) => {
+                  setEditingVenta(v);
+                  setModalVenta(true);
+                }}
+                onDelete={(id) => eliminarVenta(id)}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Cierre del día */}
+        {/* Cierre */}
         {cierreHoy && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <Card className="shadow-md border border-white/40 bg-white/70 backdrop-blur mt-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <Card className="shadow-lg border border-gray-200 bg-white/90 backdrop-blur-md rounded-2xl mt-8">
               <CardHeader>
                 <CardTitle>Cierre de hoy</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
                   <div className="font-medium">
                     Ventas: {cierreHoy?.cantidadVentas || 0}
                   </div>
@@ -245,7 +266,7 @@ export default function CajaPage() {
           </motion.div>
         )}
 
-        {/* Modales */}
+        {/* Modals */}
         <MovimientoFormModal
           open={modalMov}
           initialData={editing || null}
@@ -277,7 +298,7 @@ export default function CajaPage() {
 
         <VentaFormModal
           open={modalVenta}
-          initialData={editingVenta}
+          initialData={editingVenta || null}
           onClose={() => {
             setModalVenta(false);
             setEditingVenta(null);
