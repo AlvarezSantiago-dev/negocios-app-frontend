@@ -68,7 +68,6 @@ export default function CajaPage() {
     editarVenta,
     fetchVentas,
   } = useCajaStore();
-  const {} = useCajaStore();
 
   const [modalVenta, setModalVenta] = useState(false);
   const [editingVenta, setEditingVenta] = useState(null);

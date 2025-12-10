@@ -20,9 +20,7 @@ const useCajaStore = create((set, get) => ({
       const hoyISO = hoyArg(); // YYYY-MM-DD
 
       // Resumen del día
-      const resResumen = await api.get(
-        `/caja/resumen?desde=${hoyISO}&hasta=${hoyISO}`
-      );
+      const resResumen = await api.get(`/caja/resumen?desde=${hoyISO}`);
 
       // Últimos 5 movimientos
       const resMovimientos = await api.get("/caja/movimientos?limit=5");
