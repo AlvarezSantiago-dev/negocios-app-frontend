@@ -4,6 +4,8 @@ import MovimientosTable from "../components/MovimientosTable";
 import MovimientoFormModal from "../components/MovimientoFormModal";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
+import VentasTable from "../components/VentasTable";
+import VentaFormModal from "../components/VentaFormModal";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +50,7 @@ function CajaKPI({ label, value, icon, color, tooltip }) {
 
 export default function CajaPage() {
   const {
+    ventas = [],
     resumen = {},
     allmovimientos = [],
     fetchCaja,
@@ -61,8 +64,14 @@ export default function CajaPage() {
     cerrando = false,
     cierreHoy,
     fetchCierreData,
+    eliminarVenta,
+    editarVenta,
+    fetchVentas,
   } = useCajaStore();
+  const {} = useCajaStore();
 
+  const [modalVenta, setModalVenta] = useState(false);
+  const [editingVenta, setEditingVenta] = useState(null);
   const [modalMov, setModalMov] = useState(false);
   const [editing, setEditing] = useState(null);
   const [modalApertura, setModalApertura] = useState(false);
@@ -70,6 +79,7 @@ export default function CajaPage() {
 
   useEffect(() => {
     if (fetchCaja) fetchCaja();
+    if (fetchVentas) fetchVentas();
     if (fetchCierreData) fetchCierreData();
   }, [fetchCaja, fetchCierreData]);
 
@@ -172,6 +182,14 @@ export default function CajaPage() {
           }}
           onDelete={(id) => eliminarMovimiento?.(id)}
         />
+        <VentasTable
+          data={ventas}
+          onEdit={(v) => {
+            setEditingVenta(v);
+            setModalVenta(true);
+          }}
+          onDelete={(id) => eliminarVenta(id)}
+        />
 
         {/* Cierre del día */}
         {cierreHoy && (
@@ -256,6 +274,16 @@ export default function CajaPage() {
             if (cerrarCaja) await cerrarCaja(montos);
             setModalCierre(false);
           }}
+        />
+
+        <VentaFormModal
+          open={modalVenta}
+          initialData={editingVenta}
+          onClose={() => {
+            setModalVenta(false);
+            setEditingVenta(null);
+          }}
+          onSave={(datos) => editarVenta(editingVenta._id, datos)}
         />
       </div>
     </TooltipProvider>

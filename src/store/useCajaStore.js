@@ -1,3 +1,4 @@
+// src/store/useCajaStore.js
 import { create } from "zustand";
 import api from "../services/api";
 import { hoyArg } from "../utils/fecha";
@@ -6,29 +7,38 @@ const useCajaStore = create((set, get) => ({
   resumen: {},
   allmovimientos: [],
   movimientos: [],
+  ventas: [],
   loading: false,
   loadingCierre: false,
   cerrando: false,
 
-  // 🔹 Traer resumen del día actual y últimos 5 movimientos
+  // ===========================================================
+  // 1) Traer resumen del día actual + movimientos + ventas
+  // ===========================================================
   fetchCaja: async () => {
     set({ loading: true });
     try {
       const hoyISO = hoyArg(); // YYYY-MM-DD
 
-      // Resumen del día actual
       const resResumen = await api.get(
         `/caja/resumen?desde=${hoyISO}&hasta=${hoyISO}`
       );
 
-      // Últimos 5 movimientos (sin filtrar por fecha)
+      // últimos 5
       const resMovimientos = await api.get("/caja/movimientos?limit=5");
+
+      // todos para tablas completas
       const allmovimientos = await api.get("/caja/movimientos?limit=100");
+
+      // ventas del día
+      const ventasRes = await api.get(`/ventas?fecha=${hoyISO}`);
+
       set({
         resumen: resResumen.data.response || {},
         movimientos: resMovimientos.data.response || [],
-        loading: false,
         allmovimientos: allmovimientos.data.response || [],
+        ventas: ventasRes.data.response || [],
+        loading: false,
       });
     } catch (err) {
       console.error("Error fetchCaja:", err);
@@ -36,12 +46,14 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // 🔹 Apertura de caja
+  // ===========================================================
+  // 2) Apertura
+  // ===========================================================
   abrirCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loading: true });
     try {
       await api.post("/caja/apertura", { efectivo, mp, transferencia });
-      await get().fetchCaja(); // refrescar datos
+      await get().fetchCaja();
     } catch (err) {
       console.error("Error abrirCaja:", err);
     } finally {
@@ -49,12 +61,14 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // 🔹 Cierre de caja
+  // ===========================================================
+  // 3) Cierre
+  // ===========================================================
   cerrarCaja: async ({ efectivo = 0, mp = 0, transferencia = 0 }) => {
     set({ loadingCierre: true, cerrando: true });
     try {
       await api.post("/caja/cierre", { efectivo, mp, transferencia });
-      await get().fetchCaja(); // refrescar datos
+      await get().fetchCaja();
     } catch (err) {
       console.error("Error cerrarCaja:", err);
     } finally {
@@ -62,17 +76,18 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // 🔹 Crear un movimiento
+  // ===========================================================
+  // 4) Movimientos manuales
+  // ===========================================================
   crearMovimiento: async (data) => {
     try {
       await api.post("/caja/movimiento", data);
-      await get().fetchCaja(); // refrescar datos
+      await get().fetchCaja();
     } catch (err) {
       console.error("Error crearMovimiento:", err);
     }
   },
 
-  // 🔹 Editar un movimiento
   editarMovimiento: async (id, data) => {
     try {
       await api.put(`/caja/movimiento/${id}`, data);
@@ -82,13 +97,47 @@ const useCajaStore = create((set, get) => ({
     }
   },
 
-  // 🔹 Eliminar un movimiento
   eliminarMovimiento: async (id) => {
     try {
       await api.delete(`/caja/movimiento/${id}`);
       await get().fetchCaja();
     } catch (err) {
       console.error("Error eliminarMovimiento:", err);
+    }
+  },
+
+  // ===========================================================
+  // 5) VENTAS
+  // ===========================================================
+
+  // traer ventas del día
+  fetchVentas: async () => {
+    try {
+      const hoyISO = hoyArg();
+      const res = await api.get(`/ventas?fecha=${hoyISO}`);
+      set({ ventas: res.data.response || [] });
+    } catch (err) {
+      console.error("Error fetchVentas:", err);
+    }
+  },
+
+  // editar venta
+  editarVenta: async (id, data) => {
+    try {
+      await api.put(`/ventas/${id}`, data);
+      await get().fetchCaja(); // refresca todo
+    } catch (err) {
+      console.error("Error editarVenta:", err);
+    }
+  },
+
+  // eliminar venta
+  eliminarVenta: async (id) => {
+    try {
+      await api.delete(`/ventas/${id}`);
+      await get().fetchCaja();
+    } catch (err) {
+      console.error("Error eliminarVenta:", err);
     }
   },
 }));
