@@ -298,7 +298,7 @@ export default function CajaPage() {
 
         <VentaFormModal
           open={modalVenta}
-          initialData={editingVenta || null}
+          initialData={editingVenta}
           onClose={() => {
             setModalVenta(false);
             setEditingVenta(null);
