@@ -49,7 +49,11 @@ export default function Productos() {
   };
 
   // hook del scanner activo en esta pantalla
-  useBarcodeScanner({ onScan, enabled: true, interCharTimeout: 60 });
+  useBarcodeScanner({
+    onScan,
+    enabled: !openModal, // ⬅️ clave
+    interCharTimeout: 60,
+  });
 
   const handleSubmit = async (data) => {
     try {
@@ -90,6 +94,10 @@ export default function Productos() {
         description: "No se pudo eliminar.",
       });
     }
+  };
+  const closeModal = () => {
+    setOpenModal(false);
+    setEditing(null);
   };
 
   return (
@@ -139,7 +147,7 @@ export default function Productos() {
       {/* MODAL */}
       <ProductoFormModal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={closeModal}
         onSubmit={handleSubmit}
         initialData={editing}
       />

@@ -126,7 +126,15 @@ export default function ProductoFormModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(handleCleanSubmit)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
+              e.preventDefault();
+            }
+          }}
+          className="space-y-4"
+        >
           {/* CODIGO DE BARRAS */}
           <div>
             <Label>Código de barras</Label>
