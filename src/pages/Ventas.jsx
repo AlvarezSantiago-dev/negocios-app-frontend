@@ -16,16 +16,22 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
+import useBarcodeScanner from "@/hooks/useBarcodeScanner";
+import ProductoFormModal from "../components/ProductoFormModal";
+
 export default function Ventas() {
   const [products, setProducts] = useState([]);
   const [filtro, setFiltro] = useState("");
   const [carrito, setCarrito] = useState([]);
   const [metodoPago, setMetodoPago] = useState("efectivo");
 
+  // modal para crear producto si escaneo no tiene match
+  const [openModal, setOpenModal] = useState(false);
+  const [initialProductData, setInitialProductData] = useState(null);
+
   const cargarProductos = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
-
       setProducts(res.data.response);
     } catch (err) {
       console.log(err);
@@ -36,9 +42,46 @@ export default function Ventas() {
     cargarProductos();
   }, []);
 
-  // Agregar al carrito
-  // Dentro de la función agregarAlCarrito:
+  // ------------------------------------------------------
+  // Integración del scanner
+  // ------------------------------------------------------
+  const onScan = async (codigo) => {
+    // Intentar buscar en backend por codigo de barras
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/products/barcode/${encodeURIComponent(
+          codigo
+        )}`
+      );
+      const prod = res.data.response;
+      agregarAlCarrito(prod);
+    } catch (err) {
+      // Si no existe, ofrecer crear producto rápidamente
+      const result = await Swal.fire({
+        title: "Producto no encontrado",
+        text: `Código: ${codigo}. ¿Querés crear el producto ahora?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Crear",
+        cancelButtonText: "Cancelar",
+      });
+
+      if (result.isConfirmed) {
+        // abrir modal con codigo prellenado
+        setInitialProductData({ codigoBarras: codigo });
+        setOpenModal(true);
+      }
+    }
+  };
+
+  // Habilitamos el hook
+  useBarcodeScanner({ onScan, enabled: true, interCharTimeout: 60 });
+
+  // ------------------------------------------------------
+  // AGREGAR AL CARRITO
+  // ------------------------------------------------------
   const agregarAlCarrito = (prod) => {
+    if (!prod) return;
     if (prod.stock === 0) {
       Swal.fire({
         title: "Sin stock",
@@ -49,7 +92,8 @@ export default function Ventas() {
     }
 
     const existe = carrito.find((item) => item._id === prod._id);
-    const incremento = prod.tipo === "peso" ? 1 : 1; // 1kg por defecto, no 0.1
+    const incremento = prod.tipo === "peso" ? 1 : 1; // mantengo tu lógica
+
     if (existe && existe.cantidad + incremento > prod.stock) {
       Swal.fire({
         title: "Stock insuficiente",
@@ -87,7 +131,10 @@ export default function Ventas() {
     }
   };
 
-  // Actualizar cantidad manual
+  // ------------------------------------------------------
+  // actualizarCantidad, eliminarDelCarrito, total, registrarVenta
+  // (igual que tenías)
+  // ------------------------------------------------------
   const actualizarCantidad = (id, nuevaCantidad) => {
     const item = carrito.find((p) => p._id === id);
     if (!item) return;
@@ -163,124 +210,155 @@ export default function Ventas() {
     p.nombre.toLowerCase().includes(filtro.toLowerCase())
   );
 
+  // ------------------------------------------------------
+  // Manejo submit del modal de producto (cuando se crea desde escaneo)
+  // ------------------------------------------------------
+  const handleProductSubmit = async (data) => {
+    try {
+      // Llamada al store o API para crear producto
+      await axios.post(`${import.meta.env.VITE_API_URL}/products`, data);
+      setOpenModal(false);
+      setInitialProductData(null);
+      await cargarProductos();
+      Swal.fire({
+        title: "Producto creado",
+        icon: "success",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ title: "Error al crear producto", icon: "error" });
+    }
+  };
+
   return (
-    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* LISTA DE PRODUCTOS */}
-      <Card className="h-full rounded-2xl shadow-md border border-gray-100">
-        <CardHeader>
-          <CardTitle>Productos</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 h-[600px]">
-          <Input
-            placeholder="Buscar producto..."
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
-          />
+    <>
+      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* LISTA DE PRODUCTOS */}
+        <Card className="h-full rounded-2xl shadow-md border border-gray-100">
+          <CardHeader>
+            <CardTitle>Productos</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 h-[600px]">
+            <Input
+              placeholder="Buscar producto..."
+              value={filtro}
+              onChange={(e) => setFiltro(e.target.value)}
+            />
 
-          <ScrollArea className="flex-1 rounded-md border p-3">
-            <div className="flex flex-col gap-3">
-              {productosFiltrados.map((p) => (
-                <motion.div
-                  key={p._id}
-                  className="flex justify-between items-center border rounded-md px-3 py-2 shadow-sm bg-white hover:scale-[1.01] transition-all"
-                  whileHover={{ scale: 1.01 }}
-                >
-                  <div>
-                    <p className="font-semibold">{p.nombre}</p>
-                    <p className="text-sm opacity-70">
-                      ${p.precioVenta} • Stock: {p.stock}
-                      {p.tipo === "peso"
-                        ? " kg"
-                        : p.tipo === "pack"
-                        ? " u."
-                        : ""}
+            <ScrollArea className="flex-1 rounded-md border p-3">
+              <div className="flex flex-col gap-3">
+                {productosFiltrados.map((p) => (
+                  <motion.div
+                    key={p._id}
+                    className="flex justify-between items-center border rounded-md px-3 py-2 shadow-sm bg-white hover:scale-[1.01] transition-all"
+                    whileHover={{ scale: 1.01 }}
+                  >
+                    <div>
+                      <p className="font-semibold">{p.nombre}</p>
+                      <p className="text-sm opacity-70">
+                        ${p.precioVenta} • Stock: {p.stock}
+                        {p.tipo === "peso"
+                          ? " kg"
+                          : p.tipo === "pack"
+                          ? " u."
+                          : ""}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={p.stock === 0}
+                      onClick={() => agregarAlCarrito(p)}
+                    >
+                      {p.stock === 0 ? "Sin stock" : "Agregar"}
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* CARRITO */}
+        <Card className="h-full rounded-2xl shadow-md border border-gray-100">
+          <CardHeader>
+            <CardTitle>Carrito</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col h-[600px]">
+            <ScrollArea className="flex-1 rounded-md border p-3">
+              <div className="flex flex-col gap-3">
+                {carrito.map((item) => (
+                  <div
+                    key={item._id}
+                    className="grid grid-cols-6 items-center gap-3 border rounded-md px-3 py-2 shadow-sm bg-white hover:scale-[1.01] transition-all"
+                  >
+                    <p className="col-span-2 font-semibold">{item.nombre}</p>
+                    <Input
+                      type="number"
+                      className="w-24"
+                      step={item.tipo === "peso" ? 0.1 : 1}
+                      value={item.cantidad}
+                      onChange={(e) =>
+                        actualizarCantidad(item._id, Number(e.target.value))
+                      }
+                    />
+                    <p className="text-right font-semibold col-span-2">
+                      $
+                      {parseFloat(
+                        item.precioVenta * item.cantidad
+                      ).toLocaleString("es-AR")}
                     </p>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => eliminarDelCarrito(item._id)}
+                    >
+                      X
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    disabled={p.stock === 0}
-                    onClick={() => agregarAlCarrito(p)}
-                  >
-                    {p.stock === 0 ? "Sin stock" : "Agregar"}
-                  </Button>
-                </motion.div>
-              ))}
+                ))}
+              </div>
+            </ScrollArea>
+
+            <Separator className="my-4" />
+
+            <div className="mb-4">
+              <p className="mb-1 font-semibold">Método de pago</p>
+              <Select value={metodoPago} onValueChange={setMetodoPago}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="mp">Mercado Pago</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
 
-      {/* CARRITO */}
-      <Card className="h-full rounded-2xl shadow-md border border-gray-100">
-        <CardHeader>
-          <CardTitle>Carrito</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col h-[600px]">
-          <ScrollArea className="flex-1 rounded-md border p-3">
-            <div className="flex flex-col gap-3">
-              {carrito.map((item) => (
-                <div
-                  key={item._id}
-                  className="grid grid-cols-6 items-center gap-3 border rounded-md px-3 py-2 shadow-sm bg-white hover:scale-[1.01] transition-all"
-                >
-                  <p className="col-span-2 font-semibold">{item.nombre}</p>
-                  <Input
-                    type="number"
-                    className="w-24"
-                    step={item.tipo === "peso" ? 0.1 : 1}
-                    value={item.cantidad}
-                    onChange={(e) =>
-                      actualizarCantidad(item._id, Number(e.target.value))
-                    }
-                  />
-                  <p className="text-right font-semibold col-span-2">
-                    $
-                    {parseFloat(
-                      item.precioVenta * item.cantidad
-                    ).toLocaleString("es-AR")}
-                  </p>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => eliminarDelCarrito(item._id)}
-                  >
-                    X
-                  </Button>
-                </div>
-              ))}
+            <div className="mt-auto bg-blue-50 p-4 rounded-lg text-center">
+              <p className="text-sm text-gray-600">Total a pagar</p>
+              <p className="text-3xl font-bold text-gray-800">
+                ${total.toLocaleString("es-AR")}
+              </p>
+              <Button
+                className="mt-3 w-full py-3 text-lg"
+                onClick={registrarVenta}
+              >
+                Registrar venta
+              </Button>
             </div>
-          </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
 
-          <Separator className="my-4" />
-
-          <div className="mb-4">
-            <p className="mb-1 font-semibold">Método de pago</p>
-            <Select value={metodoPago} onValueChange={setMetodoPago}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="efectivo">Efectivo</SelectItem>
-                <SelectItem value="mp">Mercado Pago</SelectItem>
-                <SelectItem value="transferencia">Transferencia</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mt-auto bg-blue-50 p-4 rounded-lg text-center">
-            <p className="text-sm text-gray-600">Total a pagar</p>
-            <p className="text-3xl font-bold text-gray-800">
-              ${total.toLocaleString("es-AR")}
-            </p>
-            <Button
-              className="mt-3 w-full py-3 text-lg"
-              onClick={registrarVenta}
-            >
-              Registrar venta
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <ProductoFormModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        onSubmit={handleProductSubmit}
+        initialData={initialProductData}
+      />
+    </>
   );
 }

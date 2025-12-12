@@ -81,6 +81,7 @@ export default function ProductoFormModal({
         stockMinimo: 0,
         foto: "",
         descripcion: "",
+        codigoBarras: "",
       }
     );
   }, [initialData]);
@@ -88,6 +89,7 @@ export default function ProductoFormModal({
   const handleCleanSubmit = (data) => {
     const clean = { ...data };
 
+    // Normalizar tipos y números
     if (clean.tipo !== "pack") {
       delete clean.precioCompraPack;
       delete clean.unidadPorPack;
@@ -105,6 +107,13 @@ export default function ProductoFormModal({
     clean.stock = Number(clean.stock || 0);
     clean.stockMinimo = Number(clean.stockMinimo || 0);
 
+    // codigoBarras si existe -> trim
+    if (clean.codigoBarras) {
+      clean.codigoBarras = String(clean.codigoBarras).trim();
+    } else {
+      delete clean.codigoBarras;
+    }
+
     onSubmit(clean);
   };
 
@@ -118,6 +127,15 @@ export default function ProductoFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
+          {/* CODIGO DE BARRAS */}
+          <div>
+            <Label>Código de barras</Label>
+            <Input
+              {...register("codigoBarras")}
+              placeholder="Opcional: escaneá o pegá el código"
+            />
+          </div>
+
           {/* NOMBRE */}
           <div>
             <Label>Nombre</Label>
@@ -237,7 +255,9 @@ export default function ProductoFormModal({
             <Button variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit">{initialData ? "Guardar" : "Crear"}</Button>
+            <Button type="submit">
+              {initialData && initialData._id ? "Guardar" : "Crear"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

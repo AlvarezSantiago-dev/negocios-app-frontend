@@ -1,4 +1,4 @@
-// Productos.js
+// src/pages/Productos.jsx (reemplaza tu archivo actual)
 import { useEffect, useState } from "react";
 import useProductsStore from "../store/productsStore";
 import ProductosTable from "../components/ProductosTable";
@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
 
+import useBarcodeScanner from "@/hooks/useBarcodeScanner";
+
 export default function Productos() {
   const {
     products,
@@ -18,7 +20,6 @@ export default function Productos() {
     updateProduct,
     loading,
   } = useProductsStore();
-
   const { toast } = useToast();
 
   const [openModal, setOpenModal] = useState(false);
@@ -33,9 +34,26 @@ export default function Productos() {
     fetchProducts();
   }, []);
 
+  // Cuando se escanea en la pantalla de Productos: abrir modal de creación con codigo
+  const onScan = (codigo) => {
+    // si existe producto con ese barcode, abrimos edición
+    const existente = products.find((p) => p.codigoBarras === codigo);
+    if (existente) {
+      setEditing(existente);
+      setOpenModal(true);
+    } else {
+      // abrir modal en modo creación con el codigo pre puesto
+      setEditing({ codigoBarras: codigo });
+      setOpenModal(true);
+    }
+  };
+
+  // hook del scanner activo en esta pantalla
+  useBarcodeScanner({ onScan, enabled: true, interCharTimeout: 60 });
+
   const handleSubmit = async (data) => {
     try {
-      if (editing) {
+      if (editing && editing._id) {
         await updateProduct(editing._id, data);
         toast({
           title: "Producto actualizado",
