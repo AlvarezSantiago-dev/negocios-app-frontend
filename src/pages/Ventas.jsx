@@ -68,7 +68,12 @@ export default function Ventas() {
 
       if (result.isConfirmed) {
         // abrir modal con codigo prellenado
-        setInitialProductData({ codigoBarras: codigo });
+        setInitialProductData({
+          codigoBarras: codigo,
+          tipo: "unitario",
+          categoria: "general",
+        });
+
         setOpenModal(true);
       }
     }

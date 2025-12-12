@@ -43,7 +43,12 @@ export default function Productos() {
       setOpenModal(true);
     } else {
       // abrir modal en modo creación con el codigo pre puesto
-      setEditing({ codigoBarras: codigo });
+      setEditing({
+        codigoBarras: codigo,
+        tipo: "unitario",
+        categoria: "general",
+      });
+
       setOpenModal(true);
     }
   };
