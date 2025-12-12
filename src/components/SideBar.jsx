@@ -24,6 +24,7 @@ export default function Sidebar() {
     { to: "/ventas", label: "Ventas", icon: <ShoppingCart size={20} /> },
     { to: "/productos", label: "Productos", icon: <Package size={20} /> },
     { to: "/informes", label: "Informes", icon: <BarChart size={20} /> },
+    { to: "/test", label: "Test Scanner", icon: <BarChart size={20} /> },
   ];
 
   return (

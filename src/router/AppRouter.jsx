@@ -9,6 +9,7 @@ import Productos from "../pages/Products";
 import Register from "../pages/Register";
 import Ventas from "../pages/Ventas";
 import useAuthStore from "../store/authStore";
+import TestScanner from "../components/TestScanner";
 
 export default function AppRouter() {
   const isAuth = useAuthStore((s) => s.isAuth);
@@ -30,6 +31,7 @@ export default function AppRouter() {
         <Route path="informes" element={<Informes />} />
         <Route path="caja" element={<CajaPage />} />
         <Route path="cierres" element={<CierresPage />} />
+        <Route path="test" element={<TestScanner />} />
       </Route>
 
       {/* fallback */}
