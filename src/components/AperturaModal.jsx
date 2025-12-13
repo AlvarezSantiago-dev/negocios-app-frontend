@@ -68,6 +68,13 @@ export function AperturaModal({ open, onClose, onConfirm }) {
                     value={form[field]}
                     onChange={handle}
                   />
+
+                  {form[field] && (
+                    <div className="text-sm text-gray-500">
+                      {formatMoney(Number(form[field] || 0))}
+                    </div>
+                  )}
+
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-5 h-5 text-gray-400 cursor-pointer" />

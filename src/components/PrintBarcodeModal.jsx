@@ -8,6 +8,7 @@ import {
 import { generarPdfEtiquetas } from "@/utils/generarPdfEtiquetas";
 import JsBarcode from "jsbarcode";
 import { useEffect, useRef } from "react";
+import { formatMoney } from "@/services/dashboardService";
 //var global jsBarcode
 const CANTIDAD_ETIQUETAS = 10;
 
@@ -52,7 +53,7 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
               <div key={i} className="label">
                 <div className="name">{product.nombre}</div>
                 <svg />
-                <div className="price">${product.precioVenta}</div>
+                <div className="price">${formatMoney(product.precioVenta)}</div>
               </div>
             ))}
           </div>
