@@ -54,7 +54,12 @@ export default function BienvenidaDashboard({ fechaActual }) {
     setModalCierre(false);
   };
   const handleAnularCierre = async (motivo) => {
-    await anularCierre(resumen.cierreId, motivo);
+    const cierreId = resumen?.cierreHoy?._id;
+    if (!cierreId) {
+      console.error("No hay cierre activo para anular");
+      return;
+    }
+    await anularCierre(cierreId, motivo);
   };
 
   return (
@@ -74,65 +79,71 @@ export default function BienvenidaDashboard({ fechaActual }) {
         </div>
 
         {/* Derecha */}
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <span className="flex items-center gap-3 text-lg font-semibold">
-            <span
-              className={`w-4 h-4 rounded-full ${
-                color === "green"
-                  ? "bg-green-500 animate-ping"
-                  : color === "red"
-                  ? "bg-red-500"
-                  : color === "yellow"
-                  ? "bg-yellow-500 animate-ping"
-                  : "bg-gray-400"
-              }`}
-            />
-            <span
-              className={`${
-                color === "green"
-                  ? "text-green-600"
-                  : color === "red"
-                  ? "text-red-600"
-                  : color === "yellow"
-                  ? "text-yellow-600"
-                  : "text-blue-600"
-              }`}
-            >
-              Estado de caja: {texto}
-            </span>
-          </span>
-
-          {boton && (
-            <button
-              onClick={() =>
-                boton === "Abrir Caja"
-                  ? setModalApertura(true)
-                  : setModalCierre(true)
-              }
-              disabled={loading || loadingCierre || cerrando}
-              className={`relative overflow-hidden px-6 py-2 rounded-2xl font-bold text-white shadow-lg transition-all duration-300
-                ${
-                  boton === "Abrir Caja"
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-red-600 hover:bg-red-700"
+        {/* Derecha */}
+        <div className="flex flex-col sm:flex-row items-end gap-4">
+          <div className="flex flex-col items-end gap-2">
+            <span className="flex items-center gap-3 text-lg font-semibold">
+              <span
+                className={`w-4 h-4 rounded-full ${
+                  color === "green"
+                    ? "bg-green-500 animate-ping"
+                    : color === "red"
+                    ? "bg-red-500"
+                    : color === "yellow"
+                    ? "bg-yellow-500 animate-ping"
+                    : "bg-gray-400"
                 }`}
-            >
-              <span className="relative flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
-                {loadingCierre || cerrando ? "Cerrando..." : boton}
+              />
+              <span
+                className={`${
+                  color === "green"
+                    ? "text-green-600"
+                    : color === "red"
+                    ? "text-red-600"
+                    : color === "yellow"
+                    ? "text-yellow-600"
+                    : "text-blue-600"
+                }`}
+              >
+                Estado de caja: {texto}
               </span>
-            </button>
-          )}
+            </span>
+
+            {boton && (
+              <button
+                onClick={() =>
+                  boton === "Abrir Caja"
+                    ? setModalApertura(true)
+                    : setModalCierre(true)
+                }
+                disabled={loading || loadingCierre || cerrando}
+                className={`relative overflow-hidden px-6 py-2 rounded-2xl font-bold text-white shadow-lg transition-all duration-300
+          ${
+            boton === "Abrir Caja"
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-red-600 hover:bg-red-700"
+          }`}
+              >
+                <span className="relative flex items-center gap-2">
+                  <Wallet className="w-5 h-5" />
+                  {loadingCierre || cerrando ? "Cerrando..." : boton}
+                </span>
+              </button>
+            )}
+
+            {/* 🔒 Anular cierre (solo si hay cierre activo y caja cerrada) */}
+            {resumen?.cierreHoy?._id && !resumen?.abierta && (
+              <button
+                onClick={() => setModalAnular(true)}
+                className="text-xs text-red-600 border border-red-300 px-3 py-1 rounded-xl hover:bg-red-50 transition"
+              >
+                ⚠️ Anular cierre del día
+              </button>
+            )}
+          </div>
         </div>
       </motion.div>
-      {resumen?.cierreHoy && (
-        <button
-          onClick={() => setModalAnular(true)}
-          className="text-sm text-red-600 border border-red-300 px-3 py-1 rounded-xl hover:bg-red-50 transition"
-        >
-          ⚠️ Anular cierre del día
-        </button>
-      )}
+
       <AnularCierreModal
         open={modalAnular}
         onClose={() => setModalAnular(false)}
