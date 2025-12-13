@@ -13,34 +13,36 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import JsBarcode from "jsbarcode";
+import { generarPdfEtiquetas } from "@/utils/generarPdfEtiquetas";
 import { useEffect, useRef, useState } from "react";
+//var global jsBarcode
+const CANTIDAD_ETIQUETAS = 10;
 
 export default function PrintBarcodeModal({ open, onClose, product }) {
   const [cantidad, setCantidad] = useState(10);
   const sheetRef = useRef(null);
 
   useEffect(() => {
-    if (!product || !sheetRef.current) return;
+    if (!open || !product) return;
 
-    requestAnimationFrame(() => {
-      const svgs = sheetRef.current.querySelectorAll("svg");
+    const timeout = setTimeout(() => {
+      const svgs = sheetRef.current?.querySelectorAll("svg");
+      if (!svgs) return;
 
       svgs.forEach((svg) => {
         svg.innerHTML = "";
         JsBarcode(svg, product.codigoBarras, {
           format: "CODE128",
           width: 1.5,
-          height: 50,
+          height: 40,
           margin: 0,
           displayValue: false,
         });
       });
-    });
-  }, [product, cantidad]);
+    }, 50); // ⬅️ CLAVE
 
-  const imprimir = () => {
-    window.print();
-  };
+    return () => clearTimeout(timeout);
+  }, [open, product]);
 
   if (!product) return null;
 
@@ -72,7 +74,7 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
         {/* hoja A4 */}
         <div className="print-preview">
           <div ref={sheetRef} className="print-sheet">
-            {Array.from({ length: cantidad }).map((_, i) => (
+            {Array.from({ length: CANTIDAD_ETIQUETAS }).map((_, i) => (
               <div key={i} className="label">
                 <div className="name">{product.nombre}</div>
                 <svg />
@@ -86,7 +88,9 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
           <Button variant="outline" onClick={onClose}>
             Cerrar
           </Button>
-          <Button onClick={imprimir}>Imprimir etiquetas</Button>
+          <Button onClick={() => generarPdfEtiquetas(product)}>
+            Descargar PDF
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
