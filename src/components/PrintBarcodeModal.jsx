@@ -22,13 +22,17 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
   useEffect(() => {
     if (!product || !sheetRef.current) return;
 
-    const svgs = sheetRef.current.querySelectorAll("svg");
-    svgs.forEach((svg) => {
-      JsBarcode(svg, product.codigoBarras, {
-        format: "CODE128",
-        width: 2,
-        height: 60,
-        displayValue: false,
+    requestAnimationFrame(() => {
+      const svgs = sheetRef.current.querySelectorAll("svg");
+
+      svgs.forEach((svg) => {
+        svg.innerHTML = "";
+        JsBarcode(svg, product.codigoBarras, {
+          format: "CODE128",
+          width: 2,
+          height: 60,
+          displayValue: false,
+        });
       });
     });
   }, [product, cantidad]);
@@ -79,9 +83,7 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
           <Button variant="outline" onClick={onClose}>
             Cerrar
           </Button>
-          <Button onClick={imprimir}>
-            <DialogTitle>Imprimir etiquetas</DialogTitle>
-          </Button>
+          <Button onClick={imprimir}>Imprimir etiquetas</Button>
         </div>
       </DialogContent>
     </Dialog>
