@@ -156,6 +156,28 @@ export default function ProductoFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
+          {/* CODIGO DE BARRAS */}{" "}
+          <div className="space-y-2">
+            {" "}
+            <Label>Código de barras</Label>{" "}
+            <div className="flex gap-2">
+              {" "}
+              <Input
+                {...register("codigoBarras")}
+                placeholder="Opcional: escaneá o generá"
+              />{" "}
+              <Button type="button" variant="secondary" onClick={generarCodigo}>
+                {" "}
+                Generar{" "}
+              </Button>{" "}
+            </div>{" "}
+          </div>{" "}
+          {/* NOMBRE */}{" "}
+          <div>
+            {" "}
+            <Label>Nombre</Label>{" "}
+            <Input {...register("nombre", { required: true })} />{" "}
+          </div>
           {/* TIPO */}
           <div className="flex items-center gap-1">
             <Label>Tipo</Label>
