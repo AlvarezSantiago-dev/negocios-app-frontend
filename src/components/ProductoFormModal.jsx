@@ -288,7 +288,7 @@ export default function ProductoFormModal({
               variant="secondary"
               onClick={() => onPrint(initialData)}
             >
-              Imprimir código
+              Imprimir código barras
             </Button>
           )}
 

@@ -159,7 +159,12 @@ export default function Productos() {
         onClose={closeModal}
         onSubmit={handleSubmit}
         initialData={editing}
+        onPrint={(producto) => {
+          setPrintProduct(producto);
+          setOpenPrint(true);
+        }}
       />
+
       <PrintBarcodeModal
         open={openPrint}
         onClose={() => {

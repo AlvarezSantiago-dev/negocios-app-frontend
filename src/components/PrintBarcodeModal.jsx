@@ -79,7 +79,9 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
           <Button variant="outline" onClick={onClose}>
             Cerrar
           </Button>
-          <Button onClick={imprimir}>Imprimir</Button>
+          <Button onClick={imprimir}>
+            <DialogTitle>Imprimir etiquetas</DialogTitle>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
