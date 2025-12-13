@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import axios from "axios";
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -115,6 +116,20 @@ export default function ProductoFormModal({
     }
 
     onSubmit(clean);
+  };
+  //funcion para generar codigo de barras.
+  const generarCodigo = async () => {
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/products/generate-barcode`
+      );
+
+      setValue("codigoBarras", res.data.codigoBarras, {
+        shouldDirty: true,
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
