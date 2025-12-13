@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import useProductsStore from "../store/productsStore";
 import ProductosTable from "../components/ProductosTable";
 import ProductoFormModal from "../components/ProductoFormModal";
+import PrintBarcodeModal from "@/components/PrintBarcodeModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
