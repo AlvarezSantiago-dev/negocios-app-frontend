@@ -25,7 +25,7 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
     const svgs = sheetRef.current.querySelectorAll("svg");
     svgs.forEach((svg) => {
       JsBarcode(svg, product.codigoBarras, {
-        format: "EAN13",
+        format: "CODE128",
         width: 2,
         height: 60,
         displayValue: false,
