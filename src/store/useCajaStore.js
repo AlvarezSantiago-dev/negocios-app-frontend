@@ -141,7 +141,14 @@ const useCajaStore = create((set, get) => ({
       console.error("Error editarVenta:", err);
     }
   },
-
+  anularCierre: async (id, motivo) => {
+    try {
+      await api.put(`/caja/cierre/${id}/anular`, { motivo });
+      await get().fetchCaja();
+    } catch (err) {
+      console.error("Error anularCierre:", err);
+    }
+  },
   eliminarVenta: async (id) => {
     try {
       await api.delete(`/ventas/${id}`);

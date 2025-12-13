@@ -4,6 +4,7 @@ import { Wallet, CalendarDays } from "lucide-react";
 import useCajaStore from "../../store/useCajaStore";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
+import { AnularCierreModal } from "./AnularCierreModal";
 
 export default function BienvenidaDashboard({ fechaActual }) {
   const {
@@ -14,10 +15,12 @@ export default function BienvenidaDashboard({ fechaActual }) {
     loading,
     loadingCierre,
     cerrando,
+    anularCierre,
   } = useCajaStore();
 
   const [modalApertura, setModalApertura] = useState(false);
   const [modalCierre, setModalCierre] = useState(false);
+  const [modalAnular, setModalAnular] = useState(false);
 
   // 🔹 Cargar resumen de caja al montar
   useEffect(() => {
@@ -49,6 +52,9 @@ export default function BienvenidaDashboard({ fechaActual }) {
   const handleCierre = async (montos) => {
     await cerrarCaja(montos);
     setModalCierre(false);
+  };
+  const handleAnularCierre = async (motivo) => {
+    await anularCierre(resumen.cierreId, motivo);
   };
 
   return (
@@ -119,6 +125,19 @@ export default function BienvenidaDashboard({ fechaActual }) {
           )}
         </div>
       </motion.div>
+      {resumen?.cierreHoy && (
+        <button
+          onClick={() => setModalAnular(true)}
+          className="text-sm text-red-600 border border-red-300 px-3 py-1 rounded-xl hover:bg-red-50 transition"
+        >
+          ⚠️ Anular cierre del día
+        </button>
+      )}
+      <AnularCierreModal
+        open={modalAnular}
+        onClose={() => setModalAnular(false)}
+        onConfirm={handleAnularCierre}
+      />
 
       <AperturaModal
         open={modalApertura}
