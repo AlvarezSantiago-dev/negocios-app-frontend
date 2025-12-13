@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 
 import useBarcodeScanner from "@/hooks/useBarcodeScanner";
 import ProductoFormModal from "../components/ProductoFormModal";
+import ModalIngresoPeso from "@/components/ModalIngresoPeso";
 
 export default function Ventas() {
   const [products, setProducts] = useState([]);
@@ -29,6 +30,9 @@ export default function Ventas() {
   const [openModal, setOpenModal] = useState(false);
   const [initialProductData, setInitialProductData] = useState(null);
 
+  // modal para agregar peso cuando lo detecte
+  const [openPesoModal, setOpenPesoModal] = useState(false);
+  const [productoPesoActual, setProductoPesoActual] = useState(null);
   const cargarProductos = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
@@ -87,6 +91,12 @@ export default function Ventas() {
   // ------------------------------------------------------
   const agregarAlCarrito = (prod) => {
     if (!prod) return;
+    // 🔴 CLAVE: si es por peso, NO agregar directo
+    if (prod.tipo === "peso") {
+      setProductoPesoActual(prod);
+      setOpenPesoModal(true);
+      return;
+    }
     if (prod.stock === 0) {
       Swal.fire({
         title: "Sin stock",
@@ -236,6 +246,22 @@ export default function Ventas() {
       Swal.fire({ title: "Error al crear producto", icon: "error" });
     }
   };
+  const confirmarPeso = ({ peso, producto }) => {
+    setCarrito((prev) => [
+      ...prev,
+      {
+        _id: producto._id,
+        nombre: producto.nombre,
+        precioVenta: producto.precioVenta,
+        cantidad: peso, // kg
+        stock: producto.stock,
+        tipo: "peso",
+      },
+    ]);
+
+    setOpenPesoModal(false);
+    setProductoPesoActual(null);
+  };
 
   return (
     <>
@@ -363,6 +389,15 @@ export default function Ventas() {
         onClose={() => setOpenModal(false)}
         onSubmit={handleProductSubmit}
         initialData={initialProductData}
+      />
+      <ModalIngresoPeso
+        open={openPesoModal}
+        producto={productoPesoActual}
+        onCancel={() => {
+          setOpenPesoModal(false);
+          setProductoPesoActual(null);
+        }}
+        onConfirm={confirmarPeso}
       />
     </>
   );
