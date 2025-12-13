@@ -1,25 +1,17 @@
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import JsBarcode from "jsbarcode";
 import { generarPdfEtiquetas } from "@/utils/generarPdfEtiquetas";
-import { useEffect, useRef, useState } from "react";
+import JsBarcode from "jsbarcode";
+import { useEffect, useRef } from "react";
 //var global jsBarcode
 const CANTIDAD_ETIQUETAS = 10;
 
 export default function PrintBarcodeModal({ open, onClose, product }) {
-  const [cantidad, setCantidad] = useState(10);
   const sheetRef = useRef(null);
 
   useEffect(() => {
@@ -52,24 +44,6 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
         <DialogHeader>
           <DialogTitle>Imprimir etiquetas</DialogTitle>
         </DialogHeader>
-
-        {/* selector */}
-        <div className="flex items-center gap-3">
-          <span>Cantidad:</span>
-          <Select
-            value={String(cantidad)}
-            onValueChange={(v) => setCantidad(Number(v))}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10 etiquetas</SelectItem>
-              <SelectItem value="20">20 etiquetas</SelectItem>
-              <SelectItem value="30">30 etiquetas</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         {/* hoja A4 */}
         <div className="print-preview">
