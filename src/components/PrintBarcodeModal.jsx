@@ -29,8 +29,9 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
         svg.innerHTML = "";
         JsBarcode(svg, product.codigoBarras, {
           format: "CODE128",
-          width: 2,
-          height: 60,
+          width: 1.5,
+          height: 50,
+          margin: 0,
           displayValue: false,
         });
       });
@@ -69,14 +70,16 @@ export default function PrintBarcodeModal({ open, onClose, product }) {
         </div>
 
         {/* hoja A4 */}
-        <div ref={sheetRef} className="print-sheet">
-          {Array.from({ length: cantidad }).map((_, i) => (
-            <div key={i} className="label">
-              <div className="name">{product.nombre}</div>
-              <svg />
-              <div className="price">${product.precioVenta}</div>
-            </div>
-          ))}
+        <div className="print-preview">
+          <div ref={sheetRef} className="print-sheet">
+            {Array.from({ length: cantidad }).map((_, i) => (
+              <div key={i} className="label">
+                <div className="name">{product.nombre}</div>
+                <svg />
+                <div className="price">${product.precioVenta}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2">
