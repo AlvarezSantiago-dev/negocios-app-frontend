@@ -25,6 +25,9 @@ export default function Productos() {
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
+  //estados de impresion de codigo de barras.
+  const [printProduct, setPrintProduct] = useState(null);
+  const [openPrint, setOpenPrint] = useState(false);
 
   const filtered = products.filter((p) =>
     p.nombre.toLowerCase().includes(search.toLowerCase())
@@ -155,6 +158,14 @@ export default function Productos() {
         onClose={closeModal}
         onSubmit={handleSubmit}
         initialData={editing}
+      />
+      <PrintBarcodeModal
+        open={openPrint}
+        onClose={() => {
+          setOpenPrint(false);
+          setPrintProduct(null);
+        }}
+        product={printProduct}
       />
     </div>
   );

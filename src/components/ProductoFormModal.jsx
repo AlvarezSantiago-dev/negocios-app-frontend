@@ -53,6 +53,7 @@ export default function ProductoFormModal({
   onClose,
   onSubmit,
   initialData,
+  onPrint,
 }) {
   const { register, handleSubmit, reset, watch, setValue } = useForm();
   const tipo = watch("tipo");
@@ -280,6 +281,16 @@ export default function ProductoFormModal({
             <Tooltip text="Opcional. Información adicional sobre el producto" />
           </div>
           <Textarea rows={3} {...register("descripcion")} />
+
+          {initialData?._id && initialData?.codigoBarras && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onPrint(initialData)}
+            >
+              Imprimir código
+            </Button>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
