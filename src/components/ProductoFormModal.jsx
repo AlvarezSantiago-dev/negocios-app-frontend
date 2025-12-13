@@ -151,12 +151,19 @@ export default function ProductoFormModal({
           className="space-y-4"
         >
           {/* CODIGO DE BARRAS */}
-          <div>
+          <div className="space-y-2">
             <Label>Código de barras</Label>
-            <Input
-              {...register("codigoBarras")}
-              placeholder="Opcional: escaneá o pegá el código"
-            />
+
+            <div className="flex gap-2">
+              <Input
+                {...register("codigoBarras")}
+                placeholder="Opcional: escaneá o generá"
+              />
+
+              <Button type="button" variant="secondary" onClick={generarCodigo}>
+                Generar
+              </Button>
+            </div>
           </div>
 
           {/* NOMBRE */}
