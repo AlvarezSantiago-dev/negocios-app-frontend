@@ -151,12 +151,15 @@ const useCajaStore = create((set, get) => ({
     }
   },
   eliminarVenta: async (id) => {
-    try {
-      await api.delete(`/ventas/${id}`);
-      await get().fetchCaja();
-    } catch (err) {
-      console.error("Error eliminarVenta:", err);
-    }
+    await api.delete(`/ventas/${id}`);
+
+    set((state) => ({
+      ventasTodas: state.ventasTodas.filter((v) => v._id !== id),
+      ventas: state.ventas.filter((v) => v._id !== id),
+      allmovimientos: state.allmovimientos.filter((m) => m.ref !== id),
+    }));
+
+    get().fetchCaja(); // KPIs
   },
 }));
 

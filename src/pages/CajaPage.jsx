@@ -188,8 +188,8 @@ export default function CajaPage() {
             <CardContent>
               <MovimientosTable
                 data={allmovimientos || []}
+                cajaAbierta={resumen?.abierta}
                 onEdit={(m) => {
-                  if (!m) return;
                   setEditing(m);
                   setModalMov(true);
                 }}

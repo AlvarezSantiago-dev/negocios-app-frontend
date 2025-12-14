@@ -1,7 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Trash2, Pencil } from "lucide-react";
 
-export default function MovimientosTable({ data, onEdit, onDelete }) {
+export default function MovimientosTable({
+  data = [],
+  onEdit,
+  onDelete,
+  cajaAbierta = false,
+}) {
   return (
     <div className="border rounded-lg overflow-hidden shadow-sm">
       <table className="w-full text-sm">
@@ -14,29 +19,56 @@ export default function MovimientosTable({ data, onEdit, onDelete }) {
             <th className="p-3 text-right">Acciones</th>
           </tr>
         </thead>
+
         <tbody>
-          {data.map((m) => (
-            <tr key={m._id} className="border-t hover:bg-muted/30">
-              <td className="p-3 capitalize">{m.tipo}</td>
-              <td className="p-3">${m.monto}</td>
-              <td className="p-3">{m.motivo}</td>
-              <td className="p-3 capitalize">{m.metodo}</td>
-              <td className="p-3">
-                <div className="flex justify-end gap-2">
-                  <Button size="icon" variant="ghost" onClick={() => onEdit(m)}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => onDelete(m._id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
-                </div>
+          {data.map((m) => {
+            const esManual = m.operacion === "movimiento";
+            const puedeOperar = cajaAbierta && esManual;
+
+            return (
+              <tr key={m._id} className="border-t hover:bg-muted/30">
+                <td className="p-3 capitalize">{m.tipo}</td>
+                <td className="p-3">${m.monto}</td>
+                <td className="p-3">{m.motivo || "—"}</td>
+                <td className="p-3 capitalize">{m.metodo}</td>
+
+                <td className="p-3">
+                  <div className="flex justify-end gap-2">
+                    {puedeOperar && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onEdit?.(m)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => onDelete?.(m._id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+
+          {data.length === 0 && (
+            <tr>
+              <td
+                colSpan={5}
+                className="p-6 text-center text-sm text-muted-foreground"
+              >
+                No hay movimientos para mostrar.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
