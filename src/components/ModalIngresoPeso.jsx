@@ -36,16 +36,7 @@ export default function ModalIngresoPeso({
     const kilos = Number(data.peso);
     if (kilos <= 0) return;
 
-    onConfirm({
-      productoId: producto._id,
-      nombre: producto.nombre,
-      tipo: "peso",
-      peso: kilos,
-      precioKg,
-      total,
-    });
-
-    +onConfirm(kilos);
+    onConfirm(kilos); // ✅ SOLO ESTO
 
     reset();
     onClose();

@@ -255,16 +255,15 @@ export default function Ventas() {
         _id: productoPesoActual._id,
         nombre: productoPesoActual.nombre,
         precioVenta: productoPesoActual.precioVenta,
-        cantidad: peso, // kg
+        cantidad: peso,
         stock: productoPesoActual.stock,
         tipo: "peso",
       },
     ]);
 
-    setOpenPesoModal(false);
     setProductoPesoActual(null);
+    setOpenPesoModal(false);
   };
-
   return (
     <>
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -395,10 +394,7 @@ export default function Ventas() {
       <ModalIngresoPeso
         open={openPesoModal}
         producto={productoPesoActual}
-        onCancel={() => {
-          setOpenPesoModal(false);
-          setProductoPesoActual(null);
-        }}
+        onClose={() => setOpenPesoModal(false)}
         onConfirm={confirmarPeso}
       />
     </>
