@@ -31,7 +31,7 @@ export default function VentasTable({ data = [], onEdit, onDelete }) {
               <td className="p-3">${v.totalVenta}</td>
 
               <td className="p-3">
-                {v.items.map((i) => {
+                {(v.items || []).map((i) => {
                   const prod = i.productoId || {};
                   const nombre = prod.nombre ?? prod.productoNombre ?? "—";
                   return (

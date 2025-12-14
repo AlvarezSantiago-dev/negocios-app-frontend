@@ -85,7 +85,6 @@ export default function CajaPage() {
 
   useEffect(() => {
     if (fetchCaja) fetchCaja();
-    if (fetchVentas) fetchVentas();
     if (fetchCierreData) fetchCierreData();
   }, [fetchCaja, fetchCierreData]);
 
@@ -303,7 +302,10 @@ export default function CajaPage() {
             setModalVenta(false);
             setEditingVenta(null);
           }}
-          onSave={(datos) => editarVenta(editingVenta._id, datos)}
+          onSave={(datos) => {
+            if (!editingVenta?._id) return;
+            editarVenta(editingVenta._id, datos);
+          }}
         />
       </div>
     </TooltipProvider>
