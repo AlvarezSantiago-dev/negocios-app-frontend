@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,9 +19,37 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import MoneyInput from "@/components/MoneyInput";
+import { Info } from "lucide-react";
+import { motion } from "framer-motion";
 import { formatMoney } from "@/services/dashboardService";
 
+/* ---------- Tooltip ---------- */
+function Tooltip({ text }) {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <Info
+        size={14}
+        className="text-gray-400 cursor-pointer"
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      />
+      {hover && (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 5 }}
+          className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-56 bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg z-50"
+        >
+          {text}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Modal ---------- */
 export default function ProductoFormModal({
   open,
   onClose,
@@ -32,7 +61,7 @@ export default function ProductoFormModal({
 
   const tipo = watch("tipo");
 
-  /* ---------- valores numéricos ---------- */
+  /* ---------- valores ---------- */
   const precioCompra = Number(watch("precioCompra") || 0);
   const precioVenta = Number(watch("precioVenta") || 0);
   const unidadPorPack = Number(watch("unidadPorPack") || 0);
@@ -103,6 +132,17 @@ export default function ProductoFormModal({
     onSubmit(clean);
   };
 
+  /* ---------- generar código ---------- */
+  const generarCodigo = async () => {
+    const res = await axios.post(
+      `${import.meta.env.VITE_API_URL}/products/generate-barcode`
+    );
+
+    setValue("codigoBarras", res.data.codigoBarras, {
+      shouldDirty: true,
+    });
+  };
+
   /* ---------- render ---------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -115,9 +155,17 @@ export default function ProductoFormModal({
 
         <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
           {/* Código de barras */}
-          <div>
+          <div className="space-y-2">
             <Label>Código de barras</Label>
-            <Input {...register("codigoBarras")} placeholder="Opcional" />
+            <div className="flex gap-2">
+              <Input
+                {...register("codigoBarras")}
+                placeholder="Escaneá o generá uno"
+              />
+              <Button type="button" variant="secondary" onClick={generarCodigo}>
+                Generar
+              </Button>
+            </div>
           </div>
 
           {/* Nombre */}
@@ -127,34 +175,35 @@ export default function ProductoFormModal({
           </div>
 
           {/* Tipo */}
-          <div>
+          <div className="flex items-center gap-1">
             <Label>Tipo</Label>
-            <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unitario">Unitario</SelectItem>
-                <SelectItem value="peso">Por peso</SelectItem>
-                <SelectItem value="pack">Pack</SelectItem>
-              </SelectContent>
-            </Select>
+            <Tooltip text="Unitario, por peso o pack" />
           </div>
 
-          {/* Unitario / Peso */}
+          <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unitario">Unitario</SelectItem>
+              <SelectItem value="peso">Por peso</SelectItem>
+              <SelectItem value="pack">Pack</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Unitario */}
           {tipo !== "pack" && (
             <>
-              <MoneyInput
-                value={watch("precioCompra")}
+              <Input
+                type="number"
+                {...register("precioCompra")}
                 placeholder="Precio compra"
-                onChange={(v) => setValue("precioCompra", v)}
               />
-              <MoneyInput
-                value={watch("precioVenta")}
+              <Input
+                type="number"
+                {...register("precioVenta")}
                 placeholder="Precio venta"
-                onChange={(v) => setValue("precioVenta", v)}
               />
-
               {gananciaUnitario > 0 && (
                 <div className="text-sm text-green-600">
                   Ganancia estimada: ${formatMoney(gananciaUnitario)}
@@ -167,71 +216,56 @@ export default function ProductoFormModal({
           {tipo === "pack" && (
             <>
               <Input
+                type="number"
                 {...register("unidadPorPack")}
                 placeholder="Unidades por pack"
               />
-              <MoneyInput
-                value={watch("precioCompraPack")}
+              <Input
+                type="number"
+                {...register("precioCompraPack")}
                 placeholder="Costo del pack"
-                onChange={(v) => setValue("precioCompraPack", v)}
               />
-              <MoneyInput
-                value={watch("precioVenta")}
+              <Input
+                type="number"
+                {...register("precioVenta")}
                 placeholder="Venta por unidad"
-                onChange={(v) => setValue("precioVenta", v)}
               />
-
               {gananciaPackUnidad > 0 && (
                 <div className="text-sm text-green-600">
-                  Ganancia estimada por unidad: $
-                  {formatMoney(gananciaPackUnidad)}
+                  Ganancia por unidad: ${formatMoney(gananciaPackUnidad)}
                 </div>
               )}
             </>
           )}
 
           {/* Categoría */}
-          <div>
-            <Label>Categoría</Label>
-            <Select
-              value={watch("categoria")}
-              onValueChange={(v) => setValue("categoria", v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="bebidas">Bebidas</SelectItem>
-                <SelectItem value="comida">Comida</SelectItem>
-                <SelectItem value="limpieza">Limpieza</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Label>Categoría</Label>
+          <Select
+            value={watch("categoria")}
+            onValueChange={(v) => setValue("categoria", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="bebidas">Bebidas</SelectItem>
+              <SelectItem value="comida">Comida</SelectItem>
+              <SelectItem value="limpieza">Limpieza</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Stock */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Stock</Label>
-              <Input {...register("stock")} />
-            </div>
-            <div>
-              <Label>Stock mínimo</Label>
-              <Input {...register("stockMinimo")} />
-            </div>
+            <Input {...register("stock")} placeholder="Stock" />
+            <Input {...register("stockMinimo")} placeholder="Stock mínimo" />
           </div>
 
           {/* Foto */}
-          <div>
-            <Label>Foto URL</Label>
-            <Input {...register("foto")} />
-          </div>
+          <Input {...register("foto")} placeholder="Foto URL" />
 
           {/* Descripción */}
-          <div>
-            <Label>Descripción</Label>
-            <Textarea rows={3} {...register("descripcion")} />
-          </div>
+          <Textarea {...register("descripcion")} rows={3} />
 
           {initialData?._id && initialData?.codigoBarras && (
             <Button
