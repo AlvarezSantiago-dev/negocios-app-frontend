@@ -193,7 +193,7 @@ export default function CajaPage() {
                   setEditing(m);
                   setModalMov(true);
                 }}
-                onDelete={(id) => eliminarMovimiento?.(id)}
+                onDelete={(id) => eliminarMovimiento(id)}
               />
             </CardContent>
           </Card>
@@ -205,10 +205,7 @@ export default function CajaPage() {
             <CardContent>
               <VentasTable
                 data={ventasTodas || []}
-                onEdit={(v) => {
-                  setEditingVenta(v);
-                  setModalVenta(true);
-                }}
+                cajaAbierta={resumen?.abierta}
                 onDelete={(id) => eliminarVenta(id)}
               />
             </CardContent>

@@ -1,14 +1,14 @@
-// src/components/VentasTable.jsx
 import { Button } from "@/components/ui/button";
-import { Trash2, Pencil } from "lucide-react";
-import React from "react";
+import { Trash2 } from "lucide-react";
 
-export default function VentasTable({ data = [], onEdit, onDelete }) {
+export default function VentasTable({
+  data = [],
+  onDelete,
+  cajaAbierta = false,
+}) {
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm mt-6">
-      <h3 className="font-semibold p-3 bg-white border-b">Ventas</h3>
-
-      <table className="w-full text-sm">
+    <div className="w-full overflow-x-auto">
+      <table className="min-w-[900px] w-full text-sm border rounded-lg overflow-hidden">
         <thead className="bg-muted/60 text-left">
           <tr>
             <th className="p-3">Fecha</th>
@@ -23,42 +23,35 @@ export default function VentasTable({ data = [], onEdit, onDelete }) {
           {data.map((v) => (
             <tr key={v._id} className="border-t hover:bg-muted/30">
               <td className="p-3">
-                {v.fecha ? new Date(v.fecha).toLocaleString("es-AR") : "-"}
+                {new Date(v.fecha).toLocaleString("es-AR")}
               </td>
 
               <td className="p-3 capitalize">{v.metodoPago}</td>
 
-              <td className="p-3">${v.totalVenta}</td>
+              <td className="p-3 font-semibold">${v.totalVenta}</td>
 
               <td className="p-3">
                 {(v.items || []).map((i) => {
                   const prod = i.productoId || {};
-                  const nombre = prod.nombre ?? prod.productoNombre ?? "—";
                   return (
-                    <div key={i._id || i.productoId}>
-                      {i.cantidad}x {nombre} (${i.subtotal})
+                    <div key={i._id}>
+                      {i.cantidad}x {prod.nombre ?? "—"} (${i.subtotal})
                     </div>
                   );
                 })}
               </td>
 
               <td className="p-3">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => onEdit && onEdit(v)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => onDelete && onDelete(v._id)}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </Button>
+                <div className="flex justify-end">
+                  {cajaAbierta && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => onDelete?.(v._id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  )}
                 </div>
               </td>
             </tr>
@@ -66,10 +59,7 @@ export default function VentasTable({ data = [], onEdit, onDelete }) {
 
           {data.length === 0 && (
             <tr>
-              <td
-                colSpan={5}
-                className="p-6 text-center text-sm text-muted-foreground"
-              >
+              <td colSpan={5} className="p-6 text-center text-muted-foreground">
                 No hay ventas para mostrar.
               </td>
             </tr>

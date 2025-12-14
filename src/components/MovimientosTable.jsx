@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trash2, Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 
 export default function MovimientosTable({
   data = [],
@@ -8,8 +8,8 @@ export default function MovimientosTable({
   cajaAbierta = false,
 }) {
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm">
-      <table className="w-full text-sm">
+    <div className="w-full overflow-x-auto">
+      <table className="min-w-[900px] w-full text-sm border rounded-lg overflow-hidden">
         <thead className="bg-muted/60 text-left">
           <tr>
             <th className="p-3">Tipo</th>
@@ -28,7 +28,7 @@ export default function MovimientosTable({
             return (
               <tr key={m._id} className="border-t hover:bg-muted/30">
                 <td className="p-3 capitalize">{m.tipo}</td>
-                <td className="p-3">${m.monto}</td>
+                <td className="p-3 font-medium">${m.monto}</td>
                 <td className="p-3">{m.motivo || "—"}</td>
                 <td className="p-3 capitalize">{m.metodo}</td>
 
@@ -61,10 +61,7 @@ export default function MovimientosTable({
 
           {data.length === 0 && (
             <tr>
-              <td
-                colSpan={5}
-                className="p-6 text-center text-sm text-muted-foreground"
-              >
+              <td colSpan={5} className="p-6 text-center text-muted-foreground">
                 No hay movimientos para mostrar.
               </td>
             </tr>
