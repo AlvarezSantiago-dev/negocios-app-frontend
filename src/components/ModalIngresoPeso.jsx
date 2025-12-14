@@ -45,6 +45,8 @@ export default function ModalIngresoPeso({
       total,
     });
 
+    +onConfirm(kilos);
+
     reset();
     onClose();
   };

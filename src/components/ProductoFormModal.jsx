@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Info } from "lucide-react";
 import { motion } from "framer-motion";
-import { formatMoney } from "@/services/dashboardService";
+import MoneyInput from "@/components/MoneyInput";
+import { formatMoney } from "@/services/money";
 
 /* ---------- Tooltip ---------- */
 function Tooltip({ text }) {
@@ -61,22 +62,24 @@ export default function ProductoFormModal({
 
   const tipo = watch("tipo");
 
-  /* ---------- valores ---------- */
-  const precioCompra = Number(watch("precioCompra") || 0);
-  const precioVenta = Number(watch("precioVenta") || 0);
+  /* ---------- valores string ---------- */
+  const precioCompra = watch("precioCompra") || "";
+  const precioVenta = watch("precioVenta") || "";
   const unidadPorPack = Number(watch("unidadPorPack") || 0);
-  const precioCompraPack = Number(watch("precioCompraPack") || 0);
+  const precioCompraPack = watch("precioCompraPack") || "";
 
   /* ---------- cálculos ---------- */
   const gananciaUnitario =
-    precioVenta > 0 && precioCompra > 0 ? precioVenta - precioCompra : 0;
+    Number(precioVenta) > 0 && Number(precioCompra) > 0
+      ? Number(precioVenta) - Number(precioCompra)
+      : 0;
 
   const costoUnitarioPack =
-    unidadPorPack > 0 ? precioCompraPack / unidadPorPack : 0;
+    unidadPorPack > 0 ? Number(precioCompraPack || 0) / unidadPorPack : 0;
 
   const gananciaPackUnidad =
-    precioVenta > 0 && costoUnitarioPack > 0
-      ? precioVenta - costoUnitarioPack
+    Number(precioVenta) > 0 && costoUnitarioPack > 0
+      ? Number(precioVenta) - costoUnitarioPack
       : 0;
 
   /* ---------- efectos ---------- */
@@ -152,34 +155,27 @@ export default function ProductoFormModal({
             {initialData ? "Editar Producto" : "Nuevo Producto"}
           </DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
           {/* Código de barras */}
           <div className="space-y-2">
             <Label>Código de barras</Label>
             <div className="flex gap-2">
-              <Input
-                {...register("codigoBarras")}
-                placeholder="Escaneá o generá uno"
-              />
+              <Input {...register("codigoBarras")} />
               <Button type="button" variant="secondary" onClick={generarCodigo}>
                 Generar
               </Button>
             </div>
           </div>
-
           {/* Nombre */}
-          <div>
-            <Label>Nombre</Label>
-            <Input {...register("nombre", { required: true })} />
-          </div>
-
+          <Input
+            {...register("nombre", { required: true })}
+            placeholder="Nombre"
+          />
           {/* Tipo */}
           <div className="flex items-center gap-1">
             <Label>Tipo</Label>
             <Tooltip text="Unitario, por peso o pack" />
           </div>
-
           <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
             <SelectTrigger>
               <SelectValue />
@@ -190,20 +186,20 @@ export default function ProductoFormModal({
               <SelectItem value="pack">Pack</SelectItem>
             </SelectContent>
           </Select>
-
           {/* Unitario */}
           {tipo !== "pack" && (
             <>
-              <Input
-                type="number"
-                {...register("precioCompra")}
+              <MoneyInput
+                value={precioCompra}
+                onChange={(v) => setValue("precioCompra", v)}
                 placeholder="Precio compra"
               />
-              <Input
-                type="number"
-                {...register("precioVenta")}
+              <MoneyInput
+                value={precioVenta}
+                onChange={(v) => setValue("precioVenta", v)}
                 placeholder="Precio venta"
               />
+
               {gananciaUnitario > 0 && (
                 <div className="text-sm text-green-600">
                   Ganancia estimada: ${formatMoney(gananciaUnitario)}
@@ -211,25 +207,24 @@ export default function ProductoFormModal({
               )}
             </>
           )}
-
           {/* Pack */}
           {tipo === "pack" && (
             <>
               <Input
-                type="number"
                 {...register("unidadPorPack")}
                 placeholder="Unidades por pack"
               />
-              <Input
-                type="number"
-                {...register("precioCompraPack")}
+              <MoneyInput
+                value={precioCompraPack}
+                onChange={(v) => setValue("precioCompraPack", v)}
                 placeholder="Costo del pack"
               />
-              <Input
-                type="number"
-                {...register("precioVenta")}
+              <MoneyInput
+                value={precioVenta}
+                onChange={(v) => setValue("precioVenta", v)}
                 placeholder="Venta por unidad"
               />
+
               {gananciaPackUnidad > 0 && (
                 <div className="text-sm text-green-600">
                   Ganancia por unidad: ${formatMoney(gananciaPackUnidad)}
@@ -237,15 +232,17 @@ export default function ProductoFormModal({
               )}
             </>
           )}
-
-          {/* Categoría */}
-          <Label>Categoría</Label>
+          {/* CATEGORÍA */}
+          <div className="flex items-center gap-1">
+            <Label>Categoría</Label>
+            <Tooltip text="Sirve para filtrar productos en inventario" />
+          </div>
           <Select
-            value={watch("categoria")}
+            defaultValue={initialData?.categoria || "general"}
             onValueChange={(v) => setValue("categoria", v)}
           >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Seleccionar categoría" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="general">General</SelectItem>
@@ -254,29 +251,39 @@ export default function ProductoFormModal({
               <SelectItem value="limpieza">Limpieza</SelectItem>
             </SelectContent>
           </Select>
-
-          {/* Stock */}
+          {/* STOCK */}
           <div className="grid grid-cols-2 gap-3">
-            <Input {...register("stock")} placeholder="Stock" />
-            <Input {...register("stockMinimo")} placeholder="Stock mínimo" />
+            <div className="flex items-center gap-1">
+              <Label>Stock</Label>
+              <Tooltip text="Cantidad actual de este producto en inventario" />
+            </div>
+            <Input type="number" {...register("stock")} />
+            <div className="flex items-center gap-1">
+              <Label>Stock Mínimo</Label>
+              <Tooltip text="Si el stock baja de este número, se marcará alerta en dashboard" />
+            </div>
+            <Input type="number" {...register("stockMinimo")} />
           </div>
-
-          {/* Foto */}
-          <Input {...register("foto")} placeholder="Foto URL" />
-
-          {/* Descripción */}
-          <Textarea {...register("descripcion")} rows={3} />
-
+          {/* FOTO */}
+          <div className="flex items-center gap-1">
+            <Label>Foto URL</Label>
+            <Tooltip text="Opcional. Se mostrará en el dashboard e inventario" />
+          </div>
+          <Input {...register("foto")} /> {/* DESCRIPCIÓN */}
+          <div className="flex items-center gap-1">
+            <Label>Descripción</Label>
+            <Tooltip text="Opcional. Información adicional sobre el producto" />
+          </div>
+          <Textarea rows={3} {...register("descripcion")} />
           {initialData?._id && initialData?.codigoBarras && (
             <Button
               type="button"
               variant="secondary"
               onClick={() => onPrint(initialData)}
             >
-              Imprimir código de barras
+              Imprimir código barras
             </Button>
           )}
-
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
               Cancelar

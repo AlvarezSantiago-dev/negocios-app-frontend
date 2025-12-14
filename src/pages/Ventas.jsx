@@ -246,15 +246,17 @@ export default function Ventas() {
       Swal.fire({ title: "Error al crear producto", icon: "error" });
     }
   };
-  const confirmarPeso = ({ peso, producto }) => {
+  const confirmarPeso = (peso) => {
+    if (!productoPesoActual) return;
+
     setCarrito((prev) => [
       ...prev,
       {
-        _id: producto._id,
-        nombre: producto.nombre,
-        precioVenta: producto.precioVenta,
+        _id: productoPesoActual._id,
+        nombre: productoPesoActual.nombre,
+        precioVenta: productoPesoActual.precioVenta,
         cantidad: peso, // kg
-        stock: producto.stock,
+        stock: productoPesoActual.stock,
         tipo: "peso",
       },
     ]);
