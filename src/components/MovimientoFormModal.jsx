@@ -18,15 +18,6 @@ import {
 import { useState, useEffect } from "react";
 import MoneyInput from "@/components/MoneyInput";
 
-function formatMoney(value) {
-  if (!value) return "";
-  return new Intl.NumberFormat("es-AR").format(value);
-}
-
-function parseMoney(value) {
-  return Number(value.replace(/\./g, ""));
-}
-
 export default function MovimientoFormModal({
   open,
   onClose,
@@ -36,27 +27,39 @@ export default function MovimientoFormModal({
 }) {
   const [form, setForm] = useState({
     tipo: "",
-    monto: "",
+    monto: 0, // 👈 NUMBER REAL
     motivo: "",
     metodo: "",
   });
 
+  /* ---------- sync edición ---------- */
   useEffect(() => {
-    if (initialData) setForm(initialData);
-    else setForm({ tipo: "", monto: "", motivo: "", metodo: "" });
+    if (initialData) {
+      setForm({
+        tipo: initialData.tipo || "",
+        monto: Number(initialData.monto || 0),
+        motivo: initialData.motivo || "",
+        metodo: initialData.metodo || "",
+      });
+    } else {
+      setForm({
+        tipo: "",
+        monto: 0,
+        motivo: "",
+        metodo: "",
+      });
+    }
   }, [initialData]);
 
-  const handleMontoChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, "");
-    setForm({ ...form, monto: formatMoney(raw) });
-  };
-
+  /* ---------- submit ---------- */
   const submit = () => {
     if (!cajaAbierta) return;
+
     onSave({
       ...form,
-      monto: Number(form.monto || 0),
+      monto: Number(form.monto), // ✅ YA ES NÚMERO
     });
+
     onClose();
   };
 
@@ -76,7 +79,7 @@ export default function MovimientoFormModal({
         )}
 
         <div className="grid gap-4">
-          {/* Tipo */}
+          {/* ---------- TIPO ---------- */}
           <div className="grid gap-1">
             <Label>Tipo</Label>
             <Select
@@ -94,20 +97,17 @@ export default function MovimientoFormModal({
             </Select>
           </div>
 
-          {/* Monto */}
+          {/* ---------- MONTO (CORREGIDO) ---------- */}
           <div className="grid gap-1">
             <Label>Monto</Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="$ 0"
+            <MoneyInput
               value={form.monto}
-              onChange={handleMontoChange}
+              onChange={(value) => setForm({ ...form, monto: value })}
               disabled={!cajaAbierta}
             />
           </div>
 
-          {/* Motivo */}
+          {/* ---------- MOTIVO ---------- */}
           <div className="grid gap-1">
             <Label>Motivo</Label>
             <Input
@@ -117,7 +117,7 @@ export default function MovimientoFormModal({
             />
           </div>
 
-          {/* Método */}
+          {/* ---------- MÉTODO ---------- */}
           <div className="grid gap-1">
             <Label>Método de pago</Label>
             <Select
