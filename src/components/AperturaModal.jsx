@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -16,17 +15,29 @@ import {
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { Info } from "lucide-react";
+import MoneyInput from "@/components/MoneyInput";
 import { formatMoney } from "../services/dashboardService";
 
 export function AperturaModal({ open, onClose, onConfirm }) {
-  const [form, setForm] = useState({ efectivo: "", mp: "", transferencia: "" });
+  const [form, setForm] = useState({
+    efectivo: "",
+    mp: "",
+    transferencia: "",
+  });
 
-  // Reset form cada vez que se abre
   useEffect(() => {
-    if (open) setForm({ efectivo: "", mp: "", transferencia: "" });
+    if (open) {
+      setForm({ efectivo: "", mp: "", transferencia: "" });
+    }
   }, [open]);
 
-  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const total = useMemo(() => {
+    return (
+      Number(form.efectivo || 0) +
+      Number(form.mp || 0) +
+      Number(form.transferencia || 0)
+    );
+  }, [form]);
 
   const save = async () => {
     await onConfirm({
@@ -37,11 +48,6 @@ export function AperturaModal({ open, onClose, onConfirm }) {
     onClose();
   };
 
-  const total =
-    Number(form.efectivo || 0) +
-    Number(form.mp || 0) +
-    Number(form.transferencia || 0);
-
   return (
     <TooltipProvider>
       <Dialog open={open} onOpenChange={onClose}>
@@ -49,7 +55,6 @@ export function AperturaModal({ open, onClose, onConfirm }) {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
             <DialogHeader>
@@ -59,21 +64,13 @@ export function AperturaModal({ open, onClose, onConfirm }) {
             <div className="mt-4 space-y-4">
               {["efectivo", "mp", "transferencia"].map((field) => (
                 <div className="flex items-center gap-2" key={field}>
-                  <Input
-                    type="number"
-                    name={field}
-                    placeholder={`${
-                      field[0].toUpperCase() + field.slice(1)
-                    } inicial`}
+                  <MoneyInput
                     value={form[field]}
-                    onChange={handle}
+                    placeholder={`${field[0].toUpperCase()}${field.slice(
+                      1
+                    )} inicial`}
+                    onChange={(v) => setForm({ ...form, [field]: v })}
                   />
-
-                  {form[field] && (
-                    <div className="text-sm text-gray-500">
-                      {formatMoney(Number(form[field] || 0))}
-                    </div>
-                  )}
 
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -97,12 +94,10 @@ export function AperturaModal({ open, onClose, onConfirm }) {
             </div>
 
             <DialogFooter className="mt-4 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="button" onClick={save}>
-                Abrir Caja
-              </Button>
+              <Button onClick={save}>Abrir Caja</Button>
             </DialogFooter>
           </motion.div>
         </DialogContent>

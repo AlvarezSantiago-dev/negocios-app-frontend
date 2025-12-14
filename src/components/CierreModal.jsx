@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -16,10 +15,15 @@ import {
 } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 import { Info } from "lucide-react";
+import MoneyInput from "@/components/MoneyInput";
 import { formatMoney } from "../services/dashboardService";
 
 export function CierreModal({ open, onClose, onConfirm, resumen }) {
-  const [form, setForm] = useState({ efectivo: "", mp: "", transferencia: "" });
+  const [form, setForm] = useState({
+    efectivo: "",
+    mp: "",
+    transferencia: "",
+  });
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -28,8 +32,6 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
       setError("");
     }
   }, [open]);
-
-  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const total = useMemo(() => {
     return (
@@ -65,7 +67,6 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
             <DialogHeader>
@@ -75,15 +76,14 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
             <div className="mt-4 space-y-4">
               {["efectivo", "mp", "transferencia"].map((field) => (
                 <div className="flex items-center gap-2" key={field}>
-                  <Input
-                    type="number"
-                    name={field}
-                    placeholder={`${
-                      field[0].toUpperCase() + field.slice(1)
-                    } declarado`}
+                  <MoneyInput
                     value={form[field]}
-                    onChange={handle}
+                    placeholder={`${field[0].toUpperCase()}${field.slice(
+                      1
+                    )} declarado`}
+                    onChange={(v) => setForm({ ...form, [field]: v })}
                   />
+
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
@@ -104,17 +104,14 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
                 <span className="text-red-600">${formatMoney(total)}</span>
               </div>
 
-              {error && (
-                <div className="text-red-600 text-sm mt-1">{error}</div>
-              )}
+              {error && <div className="text-red-600 text-sm">{error}</div>}
             </div>
 
             <DialogFooter className="mt-4 flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
               <Button
-                type="button"
                 onClick={save}
                 disabled={!resumen?.abierta || resumen?.cierreHoy}
               >

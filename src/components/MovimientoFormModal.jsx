@@ -15,14 +15,24 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-
 import { useState, useEffect } from "react";
+import MoneyInput from "@/components/MoneyInput";
+
+function formatMoney(value) {
+  if (!value) return "";
+  return new Intl.NumberFormat("es-AR").format(value);
+}
+
+function parseMoney(value) {
+  return Number(value.replace(/\./g, ""));
+}
 
 export default function MovimientoFormModal({
   open,
   onClose,
   onSave,
   initialData = null,
+  cajaAbierta = false,
 }) {
   const [form, setForm] = useState({
     tipo: "",
@@ -36,8 +46,17 @@ export default function MovimientoFormModal({
     else setForm({ tipo: "", monto: "", motivo: "", metodo: "" });
   }, [initialData]);
 
+  const handleMontoChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    setForm({ ...form, monto: formatMoney(raw) });
+  };
+
   const submit = () => {
-    onSave(form);
+    if (!cajaAbierta) return;
+    onSave({
+      ...form,
+      monto: Number(form.monto || 0),
+    });
     onClose();
   };
 
@@ -50,6 +69,12 @@ export default function MovimientoFormModal({
           </DialogTitle>
         </DialogHeader>
 
+        {!cajaAbierta && (
+          <div className="text-sm text-red-600">
+            La caja está cerrada. No se pueden registrar movimientos.
+          </div>
+        )}
+
         <div className="grid gap-4">
           {/* Tipo */}
           <div className="grid gap-1">
@@ -57,6 +82,7 @@ export default function MovimientoFormModal({
             <Select
               value={form.tipo}
               onValueChange={(v) => setForm({ ...form, tipo: v })}
+              disabled={!cajaAbierta}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
@@ -72,10 +98,12 @@ export default function MovimientoFormModal({
           <div className="grid gap-1">
             <Label>Monto</Label>
             <Input
-              name="monto"
-              type="number"
+              type="text"
+              inputMode="numeric"
+              placeholder="$ 0"
               value={form.monto}
-              onChange={(e) => setForm({ ...form, monto: e.target.value })}
+              onChange={handleMontoChange}
+              disabled={!cajaAbierta}
             />
           </div>
 
@@ -83,9 +111,9 @@ export default function MovimientoFormModal({
           <div className="grid gap-1">
             <Label>Motivo</Label>
             <Input
-              name="motivo"
               value={form.motivo}
               onChange={(e) => setForm({ ...form, motivo: e.target.value })}
+              disabled={!cajaAbierta}
             />
           </div>
 
@@ -95,6 +123,7 @@ export default function MovimientoFormModal({
             <Select
               value={form.metodo}
               onValueChange={(v) => setForm({ ...form, metodo: v })}
+              disabled={!cajaAbierta}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar método" />
@@ -112,7 +141,9 @@ export default function MovimientoFormModal({
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={submit}>Guardar</Button>
+          <Button onClick={submit} disabled={!cajaAbierta}>
+            Guardar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,5 @@
 import { useForm } from "react-hook-form";
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,36 +18,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Info } from "lucide-react";
-import { motion } from "framer-motion";
+import MoneyInput from "@/components/MoneyInput";
 import { formatMoney } from "@/services/dashboardService";
 
-/* ---------- Tooltip ---------- */
-function Tooltip({ text }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <div className="relative inline-block">
-      <Info
-        size={14}
-        className="text-gray-400 cursor-pointer"
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-      />
-      {hover && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 5 }}
-          className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-56 bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg z-50"
-        >
-          {text}
-        </motion.div>
-      )}
-    </div>
-  );
-}
-
-/* ---------- Modal ---------- */
 export default function ProductoFormModal({
   open,
   onClose,
@@ -56,12 +28,11 @@ export default function ProductoFormModal({
   initialData,
   onPrint,
 }) {
-  // 👇 watch SALE DE ACÁ
   const { register, handleSubmit, reset, watch, setValue } = useForm();
 
   const tipo = watch("tipo");
 
-  /* ---------- watches numéricos ---------- */
+  /* ---------- valores numéricos ---------- */
   const precioCompra = Number(watch("precioCompra") || 0);
   const precioVenta = Number(watch("precioVenta") || 0);
   const unidadPorPack = Number(watch("unidadPorPack") || 0);
@@ -81,15 +52,6 @@ export default function ProductoFormModal({
 
   /* ---------- efectos ---------- */
   useEffect(() => {
-    if (tipo === "pack") {
-      setValue("precioCompra", undefined);
-    } else {
-      setValue("precioCompraPack", undefined);
-      setValue("unidadPorPack", undefined);
-    }
-  }, [tipo, setValue]);
-
-  useEffect(() => {
     reset(
       initialData || {
         nombre: "",
@@ -99,8 +61,8 @@ export default function ProductoFormModal({
         precioVenta: "",
         unidadPorPack: "",
         precioCompraPack: "",
-        stock: 0,
-        stockMinimo: 0,
+        stock: "",
+        stockMinimo: "",
         foto: "",
         descripcion: "",
         codigoBarras: "",
@@ -108,41 +70,37 @@ export default function ProductoFormModal({
     );
   }, [initialData, reset]);
 
+  useEffect(() => {
+    if (tipo === "pack") {
+      setValue("precioCompra", "");
+    } else {
+      setValue("precioCompraPack", "");
+      setValue("unidadPorPack", "");
+    }
+  }, [tipo, setValue]);
+
   /* ---------- submit ---------- */
   const handleCleanSubmit = (data) => {
-    const clean = { ...data };
+    const clean = {
+      ...data,
+      precioVenta: Number(data.precioVenta || 0),
+      stock: Number(data.stock || 0),
+      stockMinimo: Number(data.stockMinimo || 0),
+    };
 
-    if (clean.tipo !== "pack") {
-      delete clean.precioCompraPack;
-      delete clean.unidadPorPack;
-    }
-
-    if (clean.tipo === "pack") {
-      clean.unidadPorPack = Number(clean.unidadPorPack);
-      clean.precioCompraPack = Number(clean.precioCompraPack);
+    if (data.tipo === "pack") {
+      clean.unidadPorPack = Number(data.unidadPorPack || 0);
+      clean.precioCompraPack = Number(data.precioCompraPack || 0);
       delete clean.precioCompra;
-    }
-
-    clean.precioCompra =
-      clean.tipo !== "pack" ? Number(clean.precioCompra || 0) : undefined;
-    clean.precioVenta = Number(clean.precioVenta || 0);
-    clean.stock = Number(clean.stock || 0);
-    clean.stockMinimo = Number(clean.stockMinimo || 0);
-
-    if (clean.codigoBarras) {
-      clean.codigoBarras = String(clean.codigoBarras).trim();
     } else {
-      delete clean.codigoBarras;
+      clean.precioCompra = Number(data.precioCompra || 0);
+      delete clean.unidadPorPack;
+      delete clean.precioCompraPack;
     }
+
+    if (!clean.codigoBarras) delete clean.codigoBarras;
 
     onSubmit(clean);
-  };
-
-  const generarCodigo = async () => {
-    const res = await axios.post(
-      `${import.meta.env.VITE_API_URL}/products/generate-barcode`
-    );
-    setValue("codigoBarras", res.data.codigoBarras, { shouldDirty: true });
   };
 
   /* ---------- render ---------- */
@@ -156,156 +114,135 @@ export default function ProductoFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
-          {/* CODIGO DE BARRAS */}{" "}
-          <div className="space-y-2">
-            {" "}
-            <Label>Código de barras</Label>{" "}
-            <div className="flex gap-2">
-              {" "}
-              <Input
-                {...register("codigoBarras")}
-                placeholder="Opcional: escaneá o generá"
-              />{" "}
-              <Button type="button" variant="secondary" onClick={generarCodigo}>
-                {" "}
-                Generar{" "}
-              </Button>{" "}
-            </div>{" "}
-          </div>{" "}
-          {/* NOMBRE */}{" "}
+          {/* Código de barras */}
           <div>
-            {" "}
-            <Label>Nombre</Label>{" "}
-            <Input {...register("nombre", { required: true })} />{" "}
+            <Label>Código de barras</Label>
+            <Input {...register("codigoBarras")} placeholder="Opcional" />
           </div>
-          {/* TIPO */}
-          <div className="flex items-center gap-1">
+
+          {/* Nombre */}
+          <div>
+            <Label>Nombre</Label>
+            <Input {...register("nombre", { required: true })} />
+          </div>
+
+          {/* Tipo */}
+          <div>
             <Label>Tipo</Label>
-            <Tooltip text="Unitario, peso o pack" />
+            <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unitario">Unitario</SelectItem>
+                <SelectItem value="peso">Por peso</SelectItem>
+                <SelectItem value="pack">Pack</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select
-            defaultValue={initialData?.tipo || "unitario"}
-            onValueChange={(v) => setValue("tipo", v)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unitario">Unitario</SelectItem>
-              <SelectItem value="peso">Por peso</SelectItem>
-              <SelectItem value="pack">Pack</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* PRECIOS UNITARIO */}
+
+          {/* Unitario / Peso */}
           {tipo !== "pack" && (
             <>
-              <Input
-                type="number"
-                {...register("precioCompra")}
+              <MoneyInput
+                value={watch("precioCompra")}
                 placeholder="Precio compra"
+                onChange={(v) => setValue("precioCompra", v)}
               />
-              <Input
-                type="number"
-                {...register("precioVenta")}
+              <MoneyInput
+                value={watch("precioVenta")}
                 placeholder="Precio venta"
+                onChange={(v) => setValue("precioVenta", v)}
               />
 
               {gananciaUnitario > 0 && (
-                <div className="text-sm font-medium text-green-600">
-                  Ganancia estimada por unidad: ${formatMoney(gananciaUnitario)}
+                <div className="text-sm text-green-600">
+                  Ganancia estimada: ${formatMoney(gananciaUnitario)}
                 </div>
               )}
             </>
           )}
-          {/* PRECIOS PACK */}
+
+          {/* Pack */}
           {tipo === "pack" && (
             <>
               <Input
-                type="number"
                 {...register("unidadPorPack")}
                 placeholder="Unidades por pack"
               />
-              <Input
-                type="number"
-                {...register("precioCompraPack")}
-                placeholder="Costo pack"
+              <MoneyInput
+                value={watch("precioCompraPack")}
+                placeholder="Costo del pack"
+                onChange={(v) => setValue("precioCompraPack", v)}
               />
-              <Input
-                type="number"
-                {...register("precioVenta")}
+              <MoneyInput
+                value={watch("precioVenta")}
                 placeholder="Venta por unidad"
+                onChange={(v) => setValue("precioVenta", v)}
               />
 
               {gananciaPackUnidad > 0 && (
-                <div className="text-sm font-medium text-green-600">
+                <div className="text-sm text-green-600">
                   Ganancia estimada por unidad: $
                   {formatMoney(gananciaPackUnidad)}
                 </div>
               )}
             </>
           )}
-          {/* CATEGORÍA */}{" "}
-          <div className="flex items-center gap-1">
-            {" "}
-            <Label>Categoría</Label>{" "}
-            <Tooltip text="Sirve para filtrar productos en inventario" />{" "}
-          </div>{" "}
-          <Select
-            defaultValue={initialData?.categoria || "general"}
-            onValueChange={(v) => setValue("categoria", v)}
-          >
-            {" "}
-            <SelectTrigger>
-              {" "}
-              <SelectValue placeholder="Seleccionar categoría" />{" "}
-            </SelectTrigger>{" "}
-            <SelectContent>
-              {" "}
-              <SelectItem value="general">General</SelectItem>{" "}
-              <SelectItem value="bebidas">Bebidas</SelectItem>{" "}
-              <SelectItem value="comida">Comida</SelectItem>{" "}
-              <SelectItem value="limpieza">Limpieza</SelectItem>{" "}
-            </SelectContent>{" "}
-          </Select>{" "}
-          {/* STOCK */}{" "}
+
+          {/* Categoría */}
+          <div>
+            <Label>Categoría</Label>
+            <Select
+              value={watch("categoria")}
+              onValueChange={(v) => setValue("categoria", v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="bebidas">Bebidas</SelectItem>
+                <SelectItem value="comida">Comida</SelectItem>
+                <SelectItem value="limpieza">Limpieza</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Stock */}
           <div className="grid grid-cols-2 gap-3">
-            {" "}
-            <div className="flex items-center gap-1">
-              {" "}
-              <Label>Stock</Label>{" "}
-              <Tooltip text="Cantidad actual de este producto en inventario" />{" "}
-            </div>{" "}
-            <Input type="number" {...register("stock")} />{" "}
-            <div className="flex items-center gap-1">
-              {" "}
-              <Label>Stock Mínimo</Label>{" "}
-              <Tooltip text="Si el stock baja de este número, se marcará alerta en dashboard" />{" "}
-            </div>{" "}
-            <Input type="number" {...register("stockMinimo")} />{" "}
-          </div>{" "}
-          {/* FOTO */}{" "}
-          <div className="flex items-center gap-1">
-            {" "}
-            <Label>Foto URL</Label>{" "}
-            <Tooltip text="Opcional. Se mostrará en el dashboard e inventario" />{" "}
-          </div>{" "}
-          <Input {...register("foto")} /> {/* DESCRIPCIÓN */}{" "}
-          <div className="flex items-center gap-1">
-            {" "}
-            <Label>Descripción</Label>{" "}
-            <Tooltip text="Opcional. Información adicional sobre el producto" />{" "}
-          </div>{" "}
-          <Textarea rows={3} {...register("descripcion")} />{" "}
+            <div>
+              <Label>Stock</Label>
+              <Input {...register("stock")} />
+            </div>
+            <div>
+              <Label>Stock mínimo</Label>
+              <Input {...register("stockMinimo")} />
+            </div>
+          </div>
+
+          {/* Foto */}
+          <div>
+            <Label>Foto URL</Label>
+            <Input {...register("foto")} />
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <Label>Descripción</Label>
+            <Textarea rows={3} {...register("descripcion")} />
+          </div>
+
           {initialData?._id && initialData?.codigoBarras && (
             <Button
               type="button"
               variant="secondary"
               onClick={() => onPrint(initialData)}
             >
-              {" "}
-              Imprimir código barras{" "}
+              Imprimir código de barras
             </Button>
           )}
+
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
               Cancelar

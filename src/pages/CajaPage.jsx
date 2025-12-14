@@ -172,8 +172,14 @@ export default function CajaPage() {
             {loadingCierre || cerrando ? "Cerrando..." : "Cerrar Caja"}
           </Button>
 
-          <Button variant="secondary" onClick={() => setModalMov(true)}>
-            Nuevo Movimiento
+          <Button
+            onClick={() => {
+              if (!resumen?.abierta) return;
+              setEditing(null);
+              setModalMov(true);
+            }}
+          >
+            Nuevo movimiento
           </Button>
         </div>
 
@@ -267,6 +273,7 @@ export default function CajaPage() {
         {/* Modals */}
         <MovimientoFormModal
           open={modalMov}
+          cajaAbierta={resumen?.abierta}
           initialData={editing || null}
           onClose={() => {
             setModalMov(false);
