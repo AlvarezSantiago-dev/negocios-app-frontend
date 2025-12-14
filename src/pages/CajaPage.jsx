@@ -1,26 +1,26 @@
 // Redesigned CajaPage Component
 // (All logic preserved, only visual/layout changes)
 
-import { useState, useEffect } from "react";
-import useCajaStore from "../store/useCajaStore";
-import MovimientosTable from "../components/MovimientosTable";
-import MovimientoFormModal from "../components/MovimientoFormModal";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
-import VentasTable from "../components/VentasTable";
+import { useEffect, useState } from "react";
+import MovimientoFormModal from "../components/MovimientoFormModal";
+import MovimientosTable from "../components/MovimientosTable";
 import VentaFormModal from "../components/VentaFormModal";
+import VentasTable from "../components/VentasTable";
+import useCajaStore from "../store/useCajaStore";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Tooltip,
-  TooltipTrigger,
   TooltipContent,
   TooltipProvider,
+  TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Wallet, DollarSign, Smartphone, RefreshCcw, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { DollarSign, Info, RefreshCcw, Smartphone, Wallet } from "lucide-react";
 import { formatMoney } from "../services/dashboardService";
 
 function KPIBox({ label, value, icon, color, tooltip }) {
@@ -57,6 +57,7 @@ function KPIBox({ label, value, icon, color, tooltip }) {
 
 export default function CajaPage() {
   const {
+    ventasTodas = [],
     ventas = [],
     resumen = {},
     allmovimientos = [],
@@ -86,6 +87,7 @@ export default function CajaPage() {
   useEffect(() => {
     if (fetchCaja) fetchCaja();
     if (fetchCierreData) fetchCierreData();
+    if (fetchVentas) fetchVentas();
   }, [fetchCaja, fetchCierreData]);
 
   const saveMovimiento = (data) => {
@@ -202,7 +204,7 @@ export default function CajaPage() {
             </CardHeader>
             <CardContent>
               <VentasTable
-                data={ventas}
+                data={ventasTodas || []}
                 onEdit={(v) => {
                   setEditingVenta(v);
                   setModalVenta(true);

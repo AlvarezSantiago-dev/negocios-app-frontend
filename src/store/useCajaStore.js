@@ -10,6 +10,7 @@ const useCajaStore = create((set, get) => ({
   loading: false,
   loadingCierre: false,
   cerrando: false,
+  ventasTodas: [],
 
   // ======================================================
   // 🔹 TRAER RESUMEN + MOVIMIENTOS + VENTAS DEL DÍA
@@ -55,7 +56,7 @@ const useCajaStore = create((set, get) => ({
     try {
       const hoyISO = hoyArg();
       const res = await api.get(`/ventas?fecha=${hoyISO}`);
-      set({ ventas: res.data.response || [] });
+      set({ ventasTodas: res.data.response || [] });
     } catch (err) {
       console.error("Error fetchVentas:", err);
     }
