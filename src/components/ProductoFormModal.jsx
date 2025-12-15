@@ -31,18 +31,22 @@ function Tooltip({ text }) {
   const [hover, setHover] = useState(false);
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-flex">
       <Info
         size={14}
         className="text-gray-400 cursor-pointer"
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       />
+
       {hover && (
         <motion.div
-          initial={{ opacity: 0, y: 5 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-56 bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg z-50"
+          exit={{ opacity: 0, y: 6 }}
+          className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2
+                     w-56 bg-gray-800 text-white text-xs rounded px-3 py-2
+                     shadow-lg z-50"
         >
           {text}
         </motion.div>
@@ -147,11 +151,13 @@ export default function ProductoFormModal({
       shouldDirty: true,
     });
   };
+  const gananciaUnitaria =
+    precioCompra > 0 && precioVenta > 0 ? precioVenta - precioCompra : 0;
 
   /* ---------------- render ---------------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-w-5xl overflow-visible">
         <DialogHeader>
           <DialogTitle>
             {initialData ? "Editar Producto" : "Nuevo Producto"}
@@ -162,11 +168,15 @@ export default function ProductoFormModal({
           onSubmit={handleSubmit(handleCleanSubmit)}
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {/* --------- COLUMNA IZQUIERDA --------- */}
+          {/* ---------- COLUMNA IZQUIERDA ---------- */}
           <div className="space-y-4">
-            {/* Código barras */}
+            {/* Código de barras */}
             <div className="space-y-1">
-              <Label>Código de barras</Label>
+              <Label className="flex items-center gap-2">
+                Código de barras
+                <Tooltip text="Podés ingresarlo manualmente o generarlo automáticamente." />
+              </Label>
+
               <div className="flex gap-2">
                 <Input {...register("codigoBarras")} />
                 <Button
@@ -179,100 +189,179 @@ export default function ProductoFormModal({
               </div>
             </div>
 
-            <Input
-              {...register("nombre", { required: true })}
-              placeholder="Nombre"
-            />
+            {/* Nombre */}
+            <div className="space-y-1">
+              <Label>Nombre</Label>
+              <Input {...register("nombre", { required: true })} />
+            </div>
 
-            <MoneyInput
-              value={precioCompra}
-              onChange={(v) => setValue("precioCompra", v)}
-              placeholder="Precio compra"
-            />
+            {/* Precio compra */}
+            <div className="space-y-1">
+              <Label className="flex items-center gap-2">
+                Precio compra
+                <Tooltip text="Costo unitario del producto." />
+              </Label>
+              <MoneyInput
+                value={precioCompra}
+                onChange={(v) => setValue("precioCompra", v)}
+              />
+            </div>
 
-            <MoneyInput
-              value={precioVenta}
-              onChange={(v) => setValue("precioVenta", v)}
-              placeholder="Precio venta"
-            />
+            {/* Precio venta */}
+            <div className="space-y-1">
+              <Label className="flex items-center gap-2">
+                Precio venta unitario
+                <Tooltip text="Precio al vender una sola unidad." />
+              </Label>
+              <MoneyInput
+                value={precioVenta}
+                onChange={(v) => setValue("precioVenta", v)}
+              />
+            </div>
 
-            {gananciaUnitario > 0 && (
+            {/* Ganancia unitaria */}
+            {gananciaUnitaria > 0 && (
               <div className="text-sm text-green-600">
-                Ganancia unitaria: ${formatMoney(gananciaUnitario)}
+                Ganancia unitaria: ${formatMoney(gananciaUnitaria)}
               </div>
             )}
 
-            <Select
-              defaultValue={initialData?.categoria || "general"}
-              onValueChange={(v) => setValue("categoria", v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="bebidas">Bebidas</SelectItem>
-                <SelectItem value="comida">Comida</SelectItem>
-                <SelectItem value="limpieza">Limpieza</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Categoría */}
+            <div className="space-y-1">
+              <Label>Categoría</Label>
+              <Select
+                defaultValue={initialData?.categoria || "general"}
+                onValueChange={(v) => setValue("categoria", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="bebidas">Bebidas</SelectItem>
+                  <SelectItem value="comida">Comida</SelectItem>
+                  <SelectItem value="limpieza">Limpieza</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* --------- COLUMNA DERECHA --------- */}
+          {/* ---------- COLUMNA DERECHA ---------- */}
           <div className="space-y-4">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <h3 className="font-semibold">Packs (opcional)</h3>
-              <Tooltip text="Configuraciones de precio por cantidad" />
+              <Tooltip text="Configuraciones de precio por cantidad. El sistema compara rentabilidad automáticamente." />
             </div>
 
-            {packs.map((pack, i) => (
-              <div key={i} className="grid grid-cols-3 gap-2 items-center">
-                <Input
-                  type="number"
-                  placeholder="Unidades"
-                  value={pack.unidades}
-                  onChange={(e) => updatePack(i, "unidades", e.target.value)}
-                />
+            {packs.map((pack, i) => {
+              const unidades = Number(pack.unidades) || 0;
+              const precioPack = Number(pack.precioVentaPack) || 0;
 
-                <MoneyInput
-                  placeholder="Precio pack"
-                  value={pack.precioVentaPack}
-                  onChange={(v) => updatePack(i, "precioVentaPack", v)}
-                />
+              const gananciaPack =
+                unidades > 0 && precioPack > 0 && precioCompra > 0
+                  ? precioPack - precioCompra * unidades
+                  : 0;
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => removePack(i)}
+              const gananciaUnidadNormal = gananciaUnitaria * unidades;
+
+              const packMenosRentable =
+                gananciaPack > 0 &&
+                gananciaUnidadNormal > 0 &&
+                gananciaPack < gananciaUnidadNormal;
+
+              return (
+                <div
+                  key={i}
+                  className={`grid grid-cols-3 gap-2 items-center p-2 rounded border
+                  ${
+                    packMenosRentable
+                      ? "border-red-400 bg-red-50"
+                      : "border-gray-200"
+                  }`}
                 >
-                  <X size={16} />
-                </Button>
-              </div>
-            ))}
+                  <div className="space-y-1">
+                    <Label>Unidades</Label>
+                    <Input
+                      type="number"
+                      value={pack.unidades}
+                      onChange={(e) =>
+                        updatePack(i, "unidades", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label>Precio pack</Label>
+                    <MoneyInput
+                      value={pack.precioVentaPack}
+                      onChange={(v) => updatePack(i, "precioVentaPack", v)}
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => removePack(i)}
+                  >
+                    <X size={16} />
+                  </Button>
+
+                  {/* Info pack */}
+                  {gananciaPack > 0 && (
+                    <div className="col-span-3 text-xs">
+                      <span className="text-green-600">
+                        Ganancia pack: ${formatMoney(gananciaPack)}
+                      </span>
+
+                      {packMenosRentable && (
+                        <div className="text-red-600 mt-1">
+                          ⚠ Este pack es menos rentable que vender unidades
+                          sueltas (${formatMoney(gananciaUnidadNormal)})
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             <Button type="button" variant="secondary" onClick={addPack}>
               + Agregar pack
             </Button>
 
+            {/* Stock */}
             <div className="grid grid-cols-2 gap-3 pt-4">
-              <Input type="number" {...register("stock")} placeholder="Stock" />
-              <Input
-                type="number"
-                {...register("stockMinimo")}
-                placeholder="Stock mínimo"
-              />
+              <div className="space-y-1">
+                <Label className="flex items-center gap-2">
+                  Stock
+                  <Tooltip text="Cantidad disponible en unidades." />
+                </Label>
+                <Input type="number" {...register("stock")} />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="flex items-center gap-2">
+                  Stock mínimo
+                  <Tooltip text="Se usa como alerta de reposición." />
+                </Label>
+                <Input type="number" {...register("stockMinimo")} />
+              </div>
             </div>
 
-            <Input {...register("foto")} placeholder="Foto URL (opcional)" />
+            {/* Foto */}
+            <div className="space-y-1">
+              <Label>Foto (URL)</Label>
+              <Input {...register("foto")} />
+            </div>
 
-            <Textarea
-              rows={3}
-              {...register("descripcion")}
-              placeholder="Descripción"
-            />
+            {/* Descripción */}
+            <div className="space-y-1">
+              <Label>Descripción</Label>
+              <Textarea rows={3} {...register("descripcion")} />
+            </div>
           </div>
 
-          {/* --------- FOOTER --------- */}
+          {/* ---------- FOOTER ---------- */}
           <DialogFooter className="col-span-full">
             {initialData?._id && initialData?.codigoBarras && (
               <Button
