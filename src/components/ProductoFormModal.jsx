@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { useEffect, useState } from "react";
+
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Info } from "lucide-react";
+
+import { Info, X } from "lucide-react";
 import { motion } from "framer-motion";
 import MoneyInput from "@/components/MoneyInput";
 import { formatMoney } from "@/services/money";
@@ -40,7 +42,6 @@ function Tooltip({ text }) {
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 5 }}
           className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-56 bg-gray-800 text-white text-xs rounded px-2 py-1 shadow-lg z-50"
         >
           {text}
@@ -60,29 +61,20 @@ export default function ProductoFormModal({
 }) {
   const { register, handleSubmit, reset, watch, setValue } = useForm();
 
-  const tipo = watch("tipo");
+  /* ---------------- state ---------------- */
+  const [packs, setPacks] = useState([]);
 
-  /* ---------- valores string ---------- */
+  /* ---------------- watch ---------------- */
   const precioCompra = watch("precioCompra") || "";
   const precioVenta = watch("precioVenta") || "";
-  const unidadPorPack = Number(watch("unidadPorPack") || 0);
-  const precioCompraPack = watch("precioCompraPack") || "";
 
-  /* ---------- cálculos ---------- */
+  /* ---------------- cálculos ---------------- */
   const gananciaUnitario =
     Number(precioVenta) > 0 && Number(precioCompra) > 0
       ? Number(precioVenta) - Number(precioCompra)
       : 0;
 
-  const costoUnitarioPack =
-    unidadPorPack > 0 ? Number(precioCompraPack || 0) / unidadPorPack : 0;
-
-  const gananciaPackUnidad =
-    Number(precioVenta) > 0 && costoUnitarioPack > 0
-      ? Number(precioVenta) - costoUnitarioPack
-      : 0;
-
-  /* ---------- efectos ---------- */
+  /* ---------------- efectos ---------------- */
   useEffect(() => {
     reset(
       initialData || {
@@ -91,8 +83,6 @@ export default function ProductoFormModal({
         tipo: "unitario",
         precioCompra: "",
         precioVenta: "",
-        unidadPorPack: "",
-        precioCompraPack: "",
         stock: "",
         stockMinimo: "",
         foto: "",
@@ -100,42 +90,54 @@ export default function ProductoFormModal({
         codigoBarras: "",
       }
     );
+
+    setPacks(initialData?.packs || []);
   }, [initialData, reset]);
 
-  useEffect(() => {
-    if (tipo === "pack") {
-      setValue("precioCompra", "");
-    } else {
-      setValue("precioCompraPack", "");
-      setValue("unidadPorPack", "");
-    }
-  }, [tipo, setValue]);
+  /* ---------------- packs handlers ---------------- */
+  const addPack = () => {
+    setPacks([...packs, { unidades: "", precioVentaPack: "" }]);
+  };
 
-  /* ---------- submit ---------- */
+  const updatePack = (index, field, value) => {
+    const updated = [...packs];
+    updated[index][field] = value;
+    setPacks(updated);
+  };
+
+  const removePack = (index) => {
+    setPacks(packs.filter((_, i) => i !== index));
+  };
+
+  /* ---------------- submit ---------------- */
   const handleCleanSubmit = (data) => {
     const clean = {
-      ...data,
+      nombre: data.nombre.trim(),
+      categoria: data.categoria,
+      tipo: data.tipo,
+
+      precioCompra: Number(data.precioCompra || 0),
       precioVenta: Number(data.precioVenta || 0),
+
       stock: Number(data.stock || 0),
       stockMinimo: Number(data.stockMinimo || 0),
+
+      foto: data.foto || "",
+      descripcion: data.descripcion || "",
+      codigoBarras: data.codigoBarras || undefined,
+
+      packs: packs
+        .filter((p) => Number(p.unidades) > 0 && Number(p.precioVentaPack) > 0)
+        .map((p) => ({
+          unidades: Number(p.unidades),
+          precioVentaPack: Number(p.precioVentaPack),
+        })),
     };
-
-    if (data.tipo === "pack") {
-      clean.unidadPorPack = Number(data.unidadPorPack || 0);
-      clean.precioCompraPack = Number(data.precioCompraPack || 0);
-      delete clean.precioCompra;
-    } else {
-      clean.precioCompra = Number(data.precioCompra || 0);
-      delete clean.unidadPorPack;
-      delete clean.precioCompraPack;
-    }
-
-    if (!clean.codigoBarras) delete clean.codigoBarras;
 
     onSubmit(clean);
   };
 
-  /* ---------- generar código ---------- */
+  /* ---------------- generar código ---------------- */
   const generarCodigo = async () => {
     const res = await axios.post(
       `${import.meta.env.VITE_API_URL}/products/generate-barcode`
@@ -146,126 +148,142 @@ export default function ProductoFormModal({
     });
   };
 
-  /* ---------- render ---------- */
+  /* ---------------- render ---------------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle>
             {initialData ? "Editar Producto" : "Nuevo Producto"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(handleCleanSubmit)} className="space-y-4">
-          {/* Código de barras */}
-          <div className="space-y-2">
-            <Label>Código de barras</Label>
-            <div className="flex gap-2">
-              <Input {...register("codigoBarras")} />
-              <Button type="button" variant="secondary" onClick={generarCodigo}>
-                Generar
-              </Button>
-            </div>
-          </div>
-          {/* Nombre */}
-          <Input
-            {...register("nombre", { required: true })}
-            placeholder="Nombre"
-          />
-          {/* Tipo */}
-          <div className="flex items-center gap-1">
-            <Label>Tipo</Label>
-            <Tooltip text="Unitario, por peso o pack" />
-          </div>
-          <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="unitario">Unitario</SelectItem>
-              <SelectItem value="peso">Por peso</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* Unitario */}
-          {tipo !== "pack" && (
-            <>
-              <MoneyInput
-                value={precioCompra}
-                onChange={(v) => setValue("precioCompra", v)}
-                placeholder="Precio compra"
-              />
-              <MoneyInput
-                value={precioVenta}
-                onChange={(v) => setValue("precioVenta", v)}
-                placeholder="Precio venta"
-              />
 
-              {gananciaUnitario > 0 && (
-                <div className="text-sm text-green-600">
-                  Ganancia estimada: ${formatMoney(gananciaUnitario)}
-                </div>
-              )}
-            </>
-          )}
-          <h3 className="font-semibold">Packs (opcional)</h3>
-          <div className="grid grid-cols-3 gap-2">
-            <Input placeholder="Unidades" />
-            <MoneyInput placeholder="Precio pack" />
-            <Button variant="ghost">+</Button>
-          </div>
-          {/* Pack */}
-          {/* CATEGORÍA */}
-          <div className="flex items-center gap-1">
-            <Label>Categoría</Label>
-            <Tooltip text="Sirve para filtrar productos en inventario" />
-          </div>
-          <Select
-            defaultValue={initialData?.categoria || "general"}
-            onValueChange={(v) => setValue("categoria", v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="general">General</SelectItem>
-              <SelectItem value="bebidas">Bebidas</SelectItem>
-              <SelectItem value="comida">Comida</SelectItem>
-              <SelectItem value="limpieza">Limpieza</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* STOCK */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex items-center gap-1">
-              <Label>Stock</Label>
-              <Tooltip text="Cantidad actual de este producto en inventario" />
+        <form
+          onSubmit={handleSubmit(handleCleanSubmit)}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          {/* --------- COLUMNA IZQUIERDA --------- */}
+          <div className="space-y-4">
+            {/* Código barras */}
+            <div className="space-y-1">
+              <Label>Código de barras</Label>
+              <div className="flex gap-2">
+                <Input {...register("codigoBarras")} />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={generarCodigo}
+                >
+                  Generar
+                </Button>
+              </div>
             </div>
-            <Input type="number" {...register("stock")} />
-            <div className="flex items-center gap-1">
-              <Label>Stock Mínimo</Label>
-              <Tooltip text="Si el stock baja de este número, se marcará alerta en dashboard" />
-            </div>
-            <Input type="number" {...register("stockMinimo")} />
-          </div>
-          {/* FOTO */}
-          <div className="flex items-center gap-1">
-            <Label>Foto URL</Label>
-            <Tooltip text="Opcional. Se mostrará en el dashboard e inventario" />
-          </div>
-          <Input {...register("foto")} /> {/* DESCRIPCIÓN */}
-          <div className="flex items-center gap-1">
-            <Label>Descripción</Label>
-            <Tooltip text="Opcional. Información adicional sobre el producto" />
-          </div>
-          <Textarea rows={3} {...register("descripcion")} />
-          {initialData?._id && initialData?.codigoBarras && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onPrint(initialData)}
+
+            <Input
+              {...register("nombre", { required: true })}
+              placeholder="Nombre"
+            />
+
+            <MoneyInput
+              value={precioCompra}
+              onChange={(v) => setValue("precioCompra", v)}
+              placeholder="Precio compra"
+            />
+
+            <MoneyInput
+              value={precioVenta}
+              onChange={(v) => setValue("precioVenta", v)}
+              placeholder="Precio venta"
+            />
+
+            {gananciaUnitario > 0 && (
+              <div className="text-sm text-green-600">
+                Ganancia unitaria: ${formatMoney(gananciaUnitario)}
+              </div>
+            )}
+
+            <Select
+              defaultValue={initialData?.categoria || "general"}
+              onValueChange={(v) => setValue("categoria", v)}
             >
-              Imprimir código barras
+              <SelectTrigger>
+                <SelectValue placeholder="Categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="bebidas">Bebidas</SelectItem>
+                <SelectItem value="comida">Comida</SelectItem>
+                <SelectItem value="limpieza">Limpieza</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* --------- COLUMNA DERECHA --------- */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-1">
+              <h3 className="font-semibold">Packs (opcional)</h3>
+              <Tooltip text="Configuraciones de precio por cantidad" />
+            </div>
+
+            {packs.map((pack, i) => (
+              <div key={i} className="grid grid-cols-3 gap-2 items-center">
+                <Input
+                  type="number"
+                  placeholder="Unidades"
+                  value={pack.unidades}
+                  onChange={(e) => updatePack(i, "unidades", e.target.value)}
+                />
+
+                <MoneyInput
+                  placeholder="Precio pack"
+                  value={pack.precioVentaPack}
+                  onChange={(v) => updatePack(i, "precioVentaPack", v)}
+                />
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => removePack(i)}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            ))}
+
+            <Button type="button" variant="secondary" onClick={addPack}>
+              + Agregar pack
             </Button>
-          )}
-          <DialogFooter>
+
+            <div className="grid grid-cols-2 gap-3 pt-4">
+              <Input type="number" {...register("stock")} placeholder="Stock" />
+              <Input
+                type="number"
+                {...register("stockMinimo")}
+                placeholder="Stock mínimo"
+              />
+            </div>
+
+            <Input {...register("foto")} placeholder="Foto URL (opcional)" />
+
+            <Textarea
+              rows={3}
+              {...register("descripcion")}
+              placeholder="Descripción"
+            />
+          </div>
+
+          {/* --------- FOOTER --------- */}
+          <DialogFooter className="col-span-full">
+            {initialData?._id && initialData?.codigoBarras && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => onPrint(initialData)}
+              >
+                Imprimir código
+              </Button>
+            )}
+
             <Button variant="outline" onClick={onClose}>
               Cancelar
             </Button>
