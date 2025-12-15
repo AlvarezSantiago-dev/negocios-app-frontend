@@ -183,7 +183,6 @@ export default function ProductoFormModal({
             <SelectContent>
               <SelectItem value="unitario">Unitario</SelectItem>
               <SelectItem value="peso">Por peso</SelectItem>
-              <SelectItem value="pack">Pack</SelectItem>
             </SelectContent>
           </Select>
           {/* Unitario */}
@@ -207,31 +206,12 @@ export default function ProductoFormModal({
               )}
             </>
           )}
-          {/* Pack */}
-          {tipo === "pack" && (
-            <>
-              <Input
-                {...register("unidadPorPack")}
-                placeholder="Unidades por pack"
-              />
-              <MoneyInput
-                value={precioCompraPack}
-                onChange={(v) => setValue("precioCompraPack", v)}
-                placeholder="Costo del pack"
-              />
-              <MoneyInput
-                value={precioVenta}
-                onChange={(v) => setValue("precioVenta", v)}
-                placeholder="Venta por unidad"
-              />
-
-              {gananciaPackUnidad > 0 && (
-                <div className="text-sm text-green-600">
-                  Ganancia por unidad: ${formatMoney(gananciaPackUnidad)}
-                </div>
-              )}
-            </>
-          )}
+          <h3 className="font-semibold">Packs (opcional)</h3>
+          <div className="grid grid-cols-3 gap-2">
+            <Input placeholder="Unidades" />
+            <MoneyInput placeholder="Precio pack" />
+            <Button variant="ghost">+</Button>
+          </div>
           {/* CATEGORÍA */}
           <div className="flex items-center gap-1">
             <Label>Categoría</Label>

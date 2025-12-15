@@ -121,12 +121,18 @@ export default function Ventas() {
     }
 
     if (existe) {
+      const nuevaCantidad = existe.cantidad + 1;
+
+      const { tipoVenta, precioUnitario } = resolverPrecio(prod, nuevaCantidad);
+
       setCarrito(
         carrito.map((item) =>
-          item._id === prod._id
+          item.productoId === prod._id
             ? {
                 ...item,
-                cantidad: parseFloat((item.cantidad + incremento).toFixed(3)),
+                cantidad: nuevaCantidad,
+                tipoVenta,
+                precioUnitarioAplicado: precioUnitario,
               }
             : item
         )
@@ -135,17 +141,16 @@ export default function Ventas() {
       setCarrito([
         ...carrito,
         {
-          _id: prod._id,
+          productoId: prod._id,
           nombre: prod.nombre,
-          precioVenta: prod.precioVenta,
-          cantidad: incremento,
+          cantidad: 1,
+          tipoVenta: "unidad",
+          precioUnitarioAplicado: prod.precioVenta,
           stock: prod.stock,
-          tipo: prod.tipo,
         },
       ]);
     }
   };
-
   // ------------------------------------------------------
   // actualizarCantidad, eliminarDelCarrito, total, registrarVenta
   // (igual que tenías)
@@ -185,7 +190,7 @@ export default function Ventas() {
   };
 
   const total = carrito.reduce(
-    (acc, item) => acc + item.precioVenta * item.cantidad,
+    (acc, item) => acc + item.precioUnitarioAplicado * item.cantidad,
     0
   );
 
@@ -264,6 +269,29 @@ export default function Ventas() {
     setProductoPesoActual(null);
     setOpenPesoModal(false);
   };
+  const resolverPrecio = (producto, cantidad) => {
+    if (!producto.packs || producto.packs.length === 0) {
+      return {
+        tipoVenta: "unidad",
+        precioUnitario: producto.precioVenta,
+      };
+    }
+
+    const packAplicable = producto.packs.find((p) => p.unidades === cantidad);
+
+    if (packAplicable) {
+      return {
+        tipoVenta: "pack",
+        precioUnitario: packAplicable.precioVentaPack / cantidad,
+      };
+    }
+
+    return {
+      tipoVenta: "unidad",
+      precioUnitario: producto.precioVenta,
+    };
+  };
+
   return (
     <>
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -341,6 +369,10 @@ export default function Ventas() {
                         item.precioVenta * item.cantidad
                       ).toLocaleString("es-AR")}
                     </p>
+                    <p className="text-xs opacity-60">
+                      {item.tipoVenta === "pack" && "Precio pack aplicado"}
+                    </p>
+
                     <Button
                       variant="destructive"
                       size="sm"

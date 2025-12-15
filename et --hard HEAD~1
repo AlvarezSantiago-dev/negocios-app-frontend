@@ -1,0 +1,101 @@
+[33m3e78e2a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Reestructuracion completa, cambios en Ventas.jsx, productoFormModal.jsx
+[33mb639e4f[m Cambios en ModalIngresoPeso y Ventas.jsx
+[33m6e271a3[m Cambios en ModalIngresoPeso, ProductoFormModal y Ventas.jsx
+[33mc3dc986[m Se arreglo movimientoFormModal
+[33m28b7bfb[m Se modifico ProductFormModal. para generar codigo barras en caso de notener.
+[33m3b583d0[m Se agregego funcion global money.js, MoneyInput, arreglos en AperturaModal, CierreModal, MovimientoFormModal, ProductFormModal, cambios en cajaPage para habilitar/desact boton nuevo movimiento sin caja abierta
+[33m249a2da[m Se arreglaron problemas de ux ui para cajaPage de VentasTable y MovimientosTable
+[33m2788c2f[m Se agregaron soluciones para que no se rompa la caja en movimientos table, solo editables los movimientos. Las ventas, cierres y aperturas solo visuales.
+[33m2b096f3[m Ajustes en CajaPage y VentasTable para mayor estabilidad
+[33m4e09572[m Ajustes en CajaPage y VentasTable para mayor estabilidad
+[33m291d947[m Se agrego un bloqueo de anular cierre, que funcione cuando corresponda
+[33m5e79e1b[m Error nombre propiedad en anularCierre del front
+[33m581bb52[m Se agrego un metodo anularCierre al usesCajaStore.js, AnularCierreModal nuevo en BienvenidaDashboard
+[33mb988065[m se corrigieron errores del ProductFormModal, se agregaron campos que faltaban
+[33mbf51223[m Se agrego format money a formularios de product form modal, aperturaModal y printBarcodeModal con la funcion formatMoney
+[33mc79f1f2[m Se agrego la funcion de utilidad generarPdfEtiquetas.js y barcodeToImage.js para menejar generar un pdf ydescargarlo con las etiquetas. Se corrigieron errores de timeOut en PrintBarcodeModal.jsx x2
+[33m5a12ba2[m Se agrego la funcion de utilidad generarPdfEtiquetas.js y barcodeToImage.js para menejar generar un pdf ydescargarlo con las etiquetas. Se corrigieron errores de timeOut en PrintBarcodeModal.jsx
+[33mac62003[m Cambios en PrintBarcodeModal.jsx y en los estilos de print x2
+[33mce21c1b[m Cambios en PrintBarcodeModal.jsx y en los estilos de print
+[33m4970e49[m  Cambio en la logica de PrintBarcodeModal.jsx, se cambio de EAN13 a CODE128 el format de JsBarcode
+[33mf58082e[m Se agrego la importacion de styles/ print.css al main.jsx para darle styles al codigo de barra
+[33mf1bb043[m Se corrigieron errores en ProductoFormModal, PrintBarcode y Products.jsx
+[33m690ddcf[m Se agrego la instalacion del modulo jsbarcode
+[33ma0acab9[m Se agrego PintBarcodeModal import que causaba error
+[33m430d8eb[m Se agrego PintBarcodeModal, un modal para imprimir etiquetas de codigo de barra, se agrego el codigo correspondiente al productoFormModal y al Products.jsx
+[33m1290068[m  Se agrego el boton para generar el codigo en el formulario.
+[33m156323b[m  Agregada la opcion de generar codigo de barras con jsbarracode desde el front, consumiendo una ruta del backend
+[33m3d1cad3[m Agregado en ventas.jsx la integracion completa de ModalIngreso peso, el mismo componente, con sus estados y modificacion en la funcion agregar al carrito de ventas.jsx
+[33mb9f1241[m Se corrigieron bug con el setEditing data de productsjsx y setInitialProductData para setear los datos iniciales.
+[33md05da0a[m Correccion de useBarcodeScanner.js
+[33m6ec1b0f[m Agregado el funcionamiento correcto del modal en productoformModal y products.jsx
+[33m1646ae8[m  Se agrego un testScanner para verificar el uso de la pistola
+[33mce4dd7d[m Subido el error de importacion de useBarcodeScancer.js
+[33m97a1822[m Se implementaron cambios en products.jsx, ventas.jsx, productFormModal, se agrego un escuchador de eventos hook, useBarraCodeScanner.jsx
+[33m20f6a5b[m update useCajaStore
+[33m2e66cce[m update useCajaStore
+[33mc0131fd[m update pagecaja
+[33mee3a9bc[m update ventas *
+[33m6b2178d[m update useCaja Store
+[33m1ea9fc8[m Update CajaPage con componentes VentasTable y VentaFormModal.
+[33mf0041d8[m Agregado de todas las routs de informes.jsx, reeconstruccion de un nuevo modelo completo en el front
+[33m564dc24[m Update ganancia neta x ganancia en dashboard
+[33maa69928[m 100 movimientos a CajaPage
+[33m431e2da[m cambio de hora en movimientos
+[33m9015729[m Agregado de ganancia Neta a historial, pdfcierres y cierredetalles
+[33m38da49a[m Cambios pdf, hora en movimientosTable, historialCierresPage y cierredetail
+[33mda34441[m Update Registerd and login
+[33m64e51b2[m Boton ir al inventario update
+[33m883ce92[m Eliminacion del test debugg
+[33m0328283[m  Update CajaService
+[33m9e70b06[m Update dashboardx5
+[33mab2345c[m Update dashboardx4
+[33m46e37c5[m Update dashboardx3
+[33m31e1192[m Update dashboardx2
+[33mac7e469[m Update dashboard
+[33mb18dec6[m Update bug cajaPage
+[33ma9e89b2[m Update estado de caja
+[33m90fe0e7[m Update estado de caja
+[33m9c58652[m Update estado de caja.
+[33mbd1561b[m Packagejson update
+[33meeda42f[m errores de estado
+[33md201a1d[m errores de incorporacion
+[33m6c016ef[m errores de sincronizacionx de fecha
+[33m1b383fd[m errores de sincronizacionx2
+[33m124860d[m errores de sincronizacion
+[33mdfbf5a6[m Test dashboard agregadox2
+[33m1333572[m Test dashboard agregadox2
+[33ma91332d[m Test dashboard agregado
+[33m500f16d[m Test dashboard agregado
+[33m8685128[m Test dashboard
+[33m5094d36[m Arreglos importaciones
+[33m4992f75[m Arreglos sincronizacion
+[33m2172212[m Arreglos importacionesx2
+[33m06b234b[m Arreglos importaciones
+[33m5c433ce[m Arreglos login,register, stockcritico
+[33m61468ec[m Errores de sincronizacion stores
+[33mc847246[m Arreglo de importacionesx4
+[33ma42b51e[m Arreglo de importacionesx3
+[33m9742410[m Arreglo de importacionesx2
+[33m0c86757[m Arreglo de importaciones
+[33m3b81511[m Arreglo de sincronizacion y efectos visuales x2
+[33m2714e8f[m Arreglo de sincronizacion y efectos visuales
+[33m1b2be0d[m Fixx bug fetchs
+[33ma65d939[m Cambios credentialsTrue
+[33m2b4ed46[m Cambios de contra a password
+[33mcb7a659[m fixx register front x4
+[33m84796a8[m fixx register front x3
+[33m030b2a9[m fixx register front x2
+[33m1f59fb2[m fixx register front
+[33m2da6432[m update fixx dashboard importacion x7
+[33m0ba330b[m update fixx dashboard importacion x6
+[33m7e6bf46[m update fixx dashboard importacion x5
+[33md90eec5[m update fixx dashboard importacion x4
+[33m62ae7b8[m update fixx dashboard importacion x3
+[33m4ee5eee[m update fixx dashboard importacion x2
+[33mc4fb6c8[m update fixx dashboard importacion
+[33m03929dc[m force redeploy
+[33me388fef[m update
+[33md3a6692[m Deploy inicial
+[33m7f58dbe[m dotenvagregado
+[33me16492e[m first commit
