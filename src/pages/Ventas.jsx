@@ -93,6 +93,7 @@ export default function Ventas() {
       return;
     }
 
+    // lógica de packs / unidades
     const existente = carrito.find((i) => i.productoId === producto._id);
 
     if (existente) {
@@ -134,6 +135,7 @@ export default function Ventas() {
       ]);
     }
   };
+
   // ------------------------------------------------------
   // actualizarCantidad, eliminarDelCarrito, total, registrarVenta
   // (igual que tenías)

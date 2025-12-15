@@ -13,8 +13,7 @@ import { Label } from "@/components/ui/label";
 /**
  * ModalIngresoPeso
  *
- * Se usa cuando el producto es tipo "peso".
- * Permite ingresar los kilos vendidos y calcula el total.
+ * Para productos tipo "peso".
  */
 export default function ModalIngresoPeso({
   open,
@@ -23,9 +22,7 @@ export default function ModalIngresoPeso({
   onConfirm,
 }) {
   const { register, handleSubmit, watch, reset } = useForm({
-    defaultValues: {
-      peso: "",
-    },
+    defaultValues: { peso: "" },
   });
 
   const peso = Number(watch("peso") || 0);
@@ -36,7 +33,7 @@ export default function ModalIngresoPeso({
     const kilos = Number(data.peso);
     if (kilos <= 0) return;
 
-    onConfirm(kilos); // ✅ SOLO ESTO
+    onConfirm(kilos); // agrega al carrito
 
     reset();
     onClose();

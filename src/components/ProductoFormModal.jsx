@@ -29,7 +29,6 @@ import { formatMoney } from "@/services/money";
 /* ---------- Tooltip ---------- */
 function Tooltip({ text }) {
   const [hover, setHover] = useState(false);
-
   return (
     <div className="relative inline-flex">
       <Info
@@ -38,7 +37,6 @@ function Tooltip({ text }) {
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       />
-
       {hover && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
@@ -65,26 +63,21 @@ export default function ProductoFormModal({
 }) {
   const { register, handleSubmit, reset, watch, setValue } = useForm();
 
-  /* ---------------- state ---------------- */
   const [packs, setPacks] = useState([]);
-
-  /* ---------------- watch ---------------- */
   const precioCompra = watch("precioCompra") || "";
   const precioVenta = watch("precioVenta") || "";
 
-  /* ---------------- cálculos ---------------- */
   const gananciaUnitario =
     Number(precioVenta) > 0 && Number(precioCompra) > 0
       ? Number(precioVenta) - Number(precioCompra)
       : 0;
 
-  /* ---------------- efectos ---------------- */
   useEffect(() => {
     reset(
       initialData || {
         nombre: "",
         categoria: "general",
-        tipo: "unitario",
+        tipo: "unitario", // valor por defecto
         precioCompra: "",
         precioVenta: "",
         stock: "",
@@ -94,42 +87,32 @@ export default function ProductoFormModal({
         codigoBarras: "",
       }
     );
-
     setPacks(initialData?.packs || []);
   }, [initialData, reset]);
 
-  /* ---------------- packs handlers ---------------- */
-  const addPack = () => {
+  /* ---------- Packs handlers ---------- */
+  const addPack = () =>
     setPacks([...packs, { unidades: "", precioVentaPack: "" }]);
-  };
-
   const updatePack = (index, field, value) => {
     const updated = [...packs];
     updated[index][field] = value;
     setPacks(updated);
   };
+  const removePack = (index) => setPacks(packs.filter((_, i) => i !== index));
 
-  const removePack = (index) => {
-    setPacks(packs.filter((_, i) => i !== index));
-  };
-
-  /* ---------------- submit ---------------- */
+  /* ---------- Submit ---------- */
   const handleCleanSubmit = (data) => {
     const clean = {
       nombre: data.nombre.trim(),
       categoria: data.categoria,
-      tipo: data.tipo,
-
+      tipo: data.tipo, // ahora se guarda correctamente
       precioCompra: Number(data.precioCompra || 0),
       precioVenta: Number(data.precioVenta || 0),
-
       stock: Number(data.stock || 0),
       stockMinimo: Number(data.stockMinimo || 0),
-
       foto: data.foto || "",
       descripcion: data.descripcion || "",
       codigoBarras: data.codigoBarras || undefined,
-
       packs: packs
         .filter((p) => Number(p.unidades) > 0 && Number(p.precioVentaPack) > 0)
         .map((p) => ({
@@ -137,24 +120,21 @@ export default function ProductoFormModal({
           precioVentaPack: Number(p.precioVentaPack),
         })),
     };
-
     onSubmit(clean);
   };
 
-  /* ---------------- generar código ---------------- */
+  /* ---------- Generar código ---------- */
   const generarCodigo = async () => {
     const res = await axios.post(
       `${import.meta.env.VITE_API_URL}/products/generate-barcode`
     );
-
-    setValue("codigoBarras", res.data.codigoBarras, {
-      shouldDirty: true,
-    });
+    setValue("codigoBarras", res.data.codigoBarras, { shouldDirty: true });
   };
+
   const gananciaUnitaria =
     precioCompra > 0 && precioVenta > 0 ? precioVenta - precioCompra : 0;
 
-  /* ---------------- render ---------------- */
+  /* ---------- Render ---------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl overflow-visible">
@@ -176,7 +156,6 @@ export default function ProductoFormModal({
                 Código de barras
                 <Tooltip text="Podés ingresarlo manualmente o generarlo automáticamente." />
               </Label>
-
               <div className="flex gap-2">
                 <Input {...register("codigoBarras")} />
                 <Button
@@ -193,6 +172,23 @@ export default function ProductoFormModal({
             <div className="space-y-1">
               <Label>Nombre</Label>
               <Input {...register("nombre", { required: true })} />
+            </div>
+
+            {/* Tipo */}
+            <div className="space-y-1">
+              <Label>Tipo de producto</Label>
+              <Select
+                defaultValue={initialData?.tipo || "unitario"}
+                onValueChange={(v) => setValue("tipo", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unitario">Unitario</SelectItem>
+                  <SelectItem value="peso">Peso</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Precio compra */}
