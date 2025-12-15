@@ -199,16 +199,26 @@ export default function Ventas() {
 
       const venta = res.data.response;
 
-      Swal.fire("Venta registrada", "", "success");
+      // Mostrar mensaje de éxito en la misma página
+      Swal.fire({
+        title: "Venta registrada",
+        text: "Ticket generado exitosamente. Puedes imprimirlo.",
+        icon: "success",
+        showConfirmButton: false,
+        timer: 1500, // 1.5 segundos
+      });
 
       // 🔥 ABRIR TICKET
       if (venta.ticketUrl) {
-        window.open(
-          `${import.meta.env.VITE_API_BACK_URL}${venta.ticketUrl}`,
-          "_blank"
-        );
+        setTimeout(() => {
+          window.open(
+            `${import.meta.env.VITE_API_BACK_URL}${venta.ticketUrl}`,
+            "_blank"
+          );
+        }, 1000); // Abre el ticket después de 1 segundo
       }
 
+      // Limpia el carrito y recarga los productos
       setCarrito([]);
       cargarProductos();
     } catch (err) {
