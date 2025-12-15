@@ -191,11 +191,30 @@ export default function Ventas() {
       })),
     };
 
-    await axios.post(`${import.meta.env.VITE_API_URL}/ventas`, payload);
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/ventas`,
+        payload
+      );
 
-    Swal.fire("Venta registrada", "", "success");
-    setCarrito([]);
-    cargarProductos();
+      const venta = res.data.response;
+
+      Swal.fire("Venta registrada", "", "success");
+
+      // 🔥 ABRIR TICKET
+      if (venta.ticketUrl) {
+        window.open(
+          `${import.meta.env.VITE_API_BACK_URL}${venta.ticketUrl}`,
+          "_blank"
+        );
+      }
+
+      setCarrito([]);
+      cargarProductos();
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error al registrar venta", "", "error");
+    }
   };
 
   // ------------------------------------------------------
