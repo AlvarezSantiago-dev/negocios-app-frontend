@@ -212,6 +212,7 @@ export default function ProductoFormModal({
             <MoneyInput placeholder="Precio pack" />
             <Button variant="ghost">+</Button>
           </div>
+          {/* Pack */}
           {/* CATEGORÍA */}
           <div className="flex items-center gap-1">
             <Label>Categoría</Label>
