@@ -20,35 +20,6 @@ import useBarcodeScanner from "@/hooks/useBarcodeScanner";
 import ProductoFormModal from "../components/ProductoFormModal";
 import ModalIngresoPeso from "@/components/ModalIngresoPeso";
 
-/* -------------------------------------------------- */
-/* Utilidad pack automático */
-/* -------------------------------------------------- */
-const resolverPrecio = (producto, cantidad) => {
-  if (!producto.packs || producto.packs.length === 0) {
-    return {
-      tipoVenta: "unidad",
-      precioUnitario: producto.precioVenta,
-    };
-  }
-
-  const packExacto = producto.packs.find((p) => p.unidades === cantidad);
-
-  if (packExacto) {
-    return {
-      tipoVenta: "pack",
-      precioUnitario: packExacto.precioVentaPack / cantidad,
-    };
-  }
-
-  return {
-    tipoVenta: "unidad",
-    precioUnitario: producto.precioVenta,
-  };
-};
-
-/* -------------------------------------------------- */
-/* COMPONENTE */
-/* -------------------------------------------------- */
 export default function Ventas() {
   const [products, setProducts] = useState([]);
   const [filtro, setFiltro] = useState("");
@@ -60,7 +31,6 @@ export default function Ventas() {
 
   const [openPesoModal, setOpenPesoModal] = useState(false);
   const [productoPesoActual, setProductoPesoActual] = useState(null);
-
   /* -------------------------------------------------- */
   /* DATA */
   /* -------------------------------------------------- */
@@ -73,9 +43,9 @@ export default function Ventas() {
     cargarProductos();
   }, []);
 
-  /* -------------------------------------------------- */
-  /* SCANNER */
-  /* -------------------------------------------------- */
+  // ------------------------------------------------------
+  // Integración del scanner
+  // ------------------------------------------------------
   const onScan = async (codigo) => {
     try {
       const res = await axios.get(
@@ -164,7 +134,10 @@ export default function Ventas() {
       ]);
     }
   };
-
+  // ------------------------------------------------------
+  // actualizarCantidad, eliminarDelCarrito, total, registrarVenta
+  // (igual que tenías)
+  // ------------------------------------------------------
   const actualizarCantidad = (productoId, nuevaCantidad) => {
     if (nuevaCantidad < 1) return;
 
@@ -204,9 +177,6 @@ export default function Ventas() {
     0
   );
 
-  /* -------------------------------------------------- */
-  /* VENTA */
-  /* -------------------------------------------------- */
   const registrarVenta = async () => {
     if (!carrito.length) {
       Swal.fire("Carrito vacío", "", "warning");
@@ -228,6 +198,27 @@ export default function Ventas() {
     cargarProductos();
   };
 
+  // ------------------------------------------------------
+  // Manejo submit del modal de producto (cuando se crea desde escaneo)
+  // ------------------------------------------------------
+  const handleProductSubmit = async (data) => {
+    try {
+      // Llamada al store o API para crear producto
+      await axios.post(`${import.meta.env.VITE_API_URL}/products`, data);
+      setOpenModal(false);
+      setInitialProductData(null);
+      await cargarProductos();
+      Swal.fire({
+        title: "Producto creado",
+        icon: "success",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ title: "Error al crear producto", icon: "error" });
+    }
+  };
   /* -------------------------------------------------- */
   /* PESO */
   /* -------------------------------------------------- */
@@ -252,9 +243,28 @@ export default function Ventas() {
     p.nombre.toLowerCase().includes(filtro.toLowerCase())
   );
 
-  /* -------------------------------------------------- */
-  /* RENDER */
-  /* -------------------------------------------------- */
+  const resolverPrecio = (producto, cantidad) => {
+    if (!producto.packs || producto.packs.length === 0) {
+      return {
+        tipoVenta: "unidad",
+        precioUnitario: producto.precioVenta,
+      };
+    }
+
+    const packAplicable = producto.packs.find((p) => p.unidades === cantidad);
+
+    if (packAplicable) {
+      return {
+        tipoVenta: "pack",
+        precioUnitario: packAplicable.precioVentaPack / cantidad,
+      };
+    }
+
+    return {
+      tipoVenta: "unidad",
+      precioUnitario: producto.precioVenta,
+    };
+  };
   return (
     <>
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
