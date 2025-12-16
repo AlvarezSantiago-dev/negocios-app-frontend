@@ -23,10 +23,12 @@ import { hoyArg } from "../utils/fecha.js";
 
 export default function Dashboard() {
   const { resumen, movimientos, fetchCaja } = useCajaStore();
-  const [ventasHoy, setVentasHoy] = useState([]);
   const [ganHoy, setGanHoy] = useState(0);
   const [stockCritico, setStockCritico] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ventasHoy, setVentasHoy] = useState([]);
+  const [totalHoy, setTotalHoy] = useState(0);
+  const [cantHoy, setCantHoy] = useState(0);
 
   useEffect(() => {
     const cargarDashboard = async () => {
@@ -54,9 +56,6 @@ export default function Dashboard() {
   }, []);
 
   if (loading) return <p className="p-6">Cargando...</p>;
-
-  const totalHoy = ventasHoy.reduce((acc, v) => acc + (v.totalVenta ?? 0), 0);
-  const cantHoy = ventasHoy.length;
 
   // Calcular egresos del día
   const totalEgresos = movimientos

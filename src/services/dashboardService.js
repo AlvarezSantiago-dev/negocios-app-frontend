@@ -23,12 +23,25 @@ async function apiGet(url) {
 export async function fetchVentasHoy(fechaISO) {
   try {
     const res = await fetch(`${API_VENTAS}/informes/diarias?fecha=${fechaISO}`);
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error("Error obteniendo ventas diarias");
+
     const data = await res.json();
-    return data.ventas?.ventas ?? [];
+    return (
+      data.ventas ?? {
+        ventas: [],
+        totalVendido: 0,
+        gananciaTotal: 0,
+        cantidadVentas: 0,
+      }
+    );
   } catch (err) {
     console.error("Error fetchVentasHoy:", err);
-    return [];
+    return {
+      ventas: [],
+      totalVendido: 0,
+      gananciaTotal: 0,
+      cantidadVentas: 0,
+    };
   }
 }
 
