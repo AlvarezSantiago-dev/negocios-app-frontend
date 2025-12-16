@@ -35,7 +35,7 @@ export default function Dashboard() {
       setLoading(true);
       const fechaISO = hoyArg();
 
-      const [ventas, ganancias, stock] = await Promise.all([
+      const [ventasData, ganancias, stock] = await Promise.all([
         fetchVentasHoy(fechaISO),
         fetchGanancias(
           new Date().getFullYear(),
@@ -45,7 +45,10 @@ export default function Dashboard() {
         fetchStockCritico(),
       ]);
 
-      setVentasHoy(ventas);
+      setVentasHoy(ventasData.ventas);
+      setTotalHoy(ventasData.totalVendido);
+      setCantHoy(ventasData.cantidadVentas);
+
       setGanHoy(ganancias.totalGanado ?? 0);
       setStockCritico(stock);
 
