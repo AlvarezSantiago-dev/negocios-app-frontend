@@ -23,7 +23,7 @@ export default function AccesosRapidos() {
         Accesos rápidos
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {accesos.map((a, i) => (
           <motion.button
             key={i}
