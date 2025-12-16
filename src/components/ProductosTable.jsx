@@ -63,9 +63,9 @@ export default function ProductosTable({
 
             <td
               className={`p-3 font-semibold ${
-                p.stock <= p.stockMinimo
+                p.stock.toFixed(3) <= p.stockMinimo
                   ? "text-red-600"
-                  : p.stock <= p.stockMinimo * 2
+                  : p.stock.toFixed(3) <= p.stockMinimo * 2
                   ? "text-orange-500"
                   : "text-gray-700"
               }`}
