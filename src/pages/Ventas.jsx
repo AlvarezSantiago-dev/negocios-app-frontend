@@ -304,6 +304,7 @@ export default function Ventas() {
           <CardHeader>
             <CardTitle>Productos</CardTitle>
           </CardHeader>
+
           <CardContent className="h-[600px] flex flex-col gap-4">
             <Input
               placeholder="Buscar..."
@@ -312,20 +313,31 @@ export default function Ventas() {
             />
 
             <ScrollArea className="flex-1">
-              {productosFiltrados.map((p) => (
-                <motion.div
-                  key={p._id}
-                  className="flex justify-between p-2 border rounded mb-2"
-                >
-                  <div>
-                    <p className="font-semibold">{p.nombre}</p>
-                    <p className="text-sm opacity-70">
-                      ${p.precioVenta} • Stock {p.stock}
-                    </p>
-                  </div>
-                  <Button onClick={() => agregarAlCarrito(p)}>Agregar</Button>
-                </motion.div>
-              ))}
+              {productosFiltrados.map((p) => {
+                const esPeso = p.tipo === "peso";
+                const unidadStock = esPeso ? "kg" : "u";
+
+                return (
+                  <motion.div
+                    key={p._id}
+                    className="flex justify-between p-2 border rounded mb-2"
+                  >
+                    <div>
+                      <p className="font-semibold">{p.nombre}</p>
+
+                      <p className="text-sm opacity-70">
+                        ${p.precioVenta} • Stock{" "}
+                        {esPeso
+                          ? Number(p.stock).toFixed(3)
+                          : Number(p.stock).toFixed(0)}{" "}
+                        {unidadStock}
+                      </p>
+                    </div>
+
+                    <Button onClick={() => agregarAlCarrito(p)}>Agregar</Button>
+                  </motion.div>
+                );
+              })}
             </ScrollArea>
           </CardContent>
         </Card>
