@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import Sidebar from "@/components/Sidebar";
+import SideBar from "@/components/SideBar";
 import NavBar from "@/components/NavBar";
 
 export default function DashboardLayout() {
@@ -8,7 +8,7 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <SideBar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <div className="flex flex-col flex-1">
         <NavBar onMenu={() => setMobileOpen(true)} />
