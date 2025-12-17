@@ -1,3 +1,4 @@
+// src/components/ProductoFormModal.jsx
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ import { formatMoney } from "@/services/money";
 /* ---------- Tooltip ---------- */
 function Tooltip({ text }) {
   const [hover, setHover] = useState(false);
+
   return (
     <div className="relative inline-flex">
       <Info
@@ -37,13 +39,14 @@ function Tooltip({ text }) {
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       />
+
       {hover && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 6 }}
           className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2
-                     w-56 bg-gray-800 text-white text-xs rounded px-3 py-2
+                     w-60 bg-gray-800 text-white text-xs rounded px-3 py-2
                      shadow-lg z-50"
         >
           {text}
@@ -61,78 +64,88 @@ export default function ProductoFormModal({
   initialData,
   onPrint,
 }) {
-  const { register, handleSubmit, reset, watch, setValue } = useForm();
+  const { register, handleSubmit, reset, watch, setValue } = useForm({
+    defaultValues: {
+      nombre: "",
+      categoria: "general",
+      tipo: "unitario",
+      precioCompra: "",
+      precioVenta: "",
+      stock: "",
+      stockMinimo: "",
+      foto: "",
+      descripcion: "",
+      codigoBarras: "",
+    },
+  });
 
   const [packs, setPacks] = useState([]);
-  const precioCompra = watch("precioCompra") || "";
-  const precioVenta = watch("precioVenta") || "";
 
-  const gananciaUnitario =
-    Number(precioVenta) > 0 && Number(precioCompra) > 0
-      ? Number(precioVenta) - Number(precioCompra)
-      : 0;
+  /* ---------- Watch ---------- */
+  const tipo = watch("tipo");
+  const categoria = watch("categoria");
+  const precioCompra = Number(watch("precioCompra") || 0);
+  const precioVenta = Number(watch("precioVenta") || 0);
 
+  const gananciaUnitaria =
+    precioCompra > 0 && precioVenta > 0 ? precioVenta - precioCompra : 0;
+
+  /* ---------- Sync modal ---------- */
   useEffect(() => {
-    reset(
-      initialData || {
-        nombre: "",
-        categoria: "general",
-        tipo: "unitario", // valor por defecto
-        precioCompra: "",
-        precioVenta: "",
-        stock: "",
-        stockMinimo: "",
-        foto: "",
-        descripcion: "",
-        codigoBarras: "",
-      }
-    );
-    setPacks(initialData?.packs || []);
-  }, [initialData, reset]);
+    if (!open) return;
 
-  /* ---------- Packs handlers ---------- */
+    reset({
+      nombre: initialData?.nombre ?? "",
+      categoria: initialData?.categoria ?? "general",
+      tipo: initialData?.tipo ?? "unitario",
+      precioCompra: initialData?.precioCompra ?? "",
+      precioVenta: initialData?.precioVenta ?? "",
+      stock: initialData?.stock ?? "",
+      stockMinimo: initialData?.stockMinimo ?? "",
+      foto: initialData?.foto ?? "",
+      descripcion: initialData?.descripcion ?? "",
+      codigoBarras: initialData?.codigoBarras ?? "",
+    });
+
+    setPacks(initialData?.packs ?? []);
+  }, [open, initialData, reset]);
+
+  /* ---------- Packs ---------- */
   const addPack = () =>
     setPacks([...packs, { unidades: "", precioVentaPack: "" }]);
-  const updatePack = (index, field, value) => {
+
+  const updatePack = (i, field, value) => {
     const updated = [...packs];
-    updated[index][field] = value;
+    updated[i][field] = value;
     setPacks(updated);
   };
-  const removePack = (index) => setPacks(packs.filter((_, i) => i !== index));
+
+  const removePack = (i) => setPacks(packs.filter((_, index) => index !== i));
 
   /* ---------- Submit ---------- */
   const handleCleanSubmit = (data) => {
-    const clean = {
-      nombre: data.nombre.trim(),
-      categoria: data.categoria,
-      tipo: data.tipo, // ahora se guarda correctamente
+    onSubmit({
+      ...data,
       precioCompra: Number(data.precioCompra || 0),
       precioVenta: Number(data.precioVenta || 0),
       stock: Number(data.stock || 0),
       stockMinimo: Number(data.stockMinimo || 0),
-      foto: data.foto || "",
-      descripcion: data.descripcion || "",
-      codigoBarras: data.codigoBarras || undefined,
       packs: packs
         .filter((p) => Number(p.unidades) > 0 && Number(p.precioVentaPack) > 0)
         .map((p) => ({
           unidades: Number(p.unidades),
           precioVentaPack: Number(p.precioVentaPack),
         })),
-    };
-    onSubmit(clean);
+    });
   };
 
-  /* ---------- Generar código ---------- */
+  /* ---------- Barcode ---------- */
   const generarCodigo = async () => {
     const res = await axios.post(
       `${import.meta.env.VITE_API_URL}/products/generate-barcode`
     );
     setValue("codigoBarras", res.data.codigoBarras, { shouldDirty: true });
   };
-
-  const gananciaUnitaria =
-    precioCompra > 0 && precioVenta > 0 ? precioVenta - precioCompra : 0;
 
   /* ---------- Render ---------- */
   return (
@@ -148,9 +161,9 @@ export default function ProductoFormModal({
           onSubmit={handleSubmit(handleCleanSubmit)}
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {/* ---------- COLUMNA IZQUIERDA ---------- */}
+          {/* ---------- IZQUIERDA ---------- */}
           <div className="space-y-4">
-            {/* Código de barras */}
+            {/* Código barras */}
             <div className="space-y-1">
               <Label className="flex items-center gap-2">
                 Código de barras
@@ -176,17 +189,18 @@ export default function ProductoFormModal({
 
             {/* Tipo */}
             <div className="space-y-1">
-              <Label>Tipo de producto</Label>
-              <Select
-                defaultValue={initialData?.tipo || "unitario"}
-                onValueChange={(v) => setValue("tipo", v)}
-              >
+              <Label className="flex items-center gap-2">
+                Tipo de producto
+                <Tooltip text="Unitario: se vende por unidad. Peso: se vende por kilos/gramos desde balanza." />
+              </Label>
+
+              <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Tipo" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unitario">Unitario</SelectItem>
-                  <SelectItem value="peso">Peso</SelectItem>
+                  <SelectItem value="peso">Por peso</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -195,7 +209,7 @@ export default function ProductoFormModal({
             <div className="space-y-1">
               <Label className="flex items-center gap-2">
                 Precio compra
-                <Tooltip text="Costo unitario del producto." />
+                <Tooltip text="Costo del producto (por unidad o kilo según tipo)." />
               </Label>
               <MoneyInput
                 value={precioCompra}
@@ -206,8 +220,8 @@ export default function ProductoFormModal({
             {/* Precio venta */}
             <div className="space-y-1">
               <Label className="flex items-center gap-2">
-                Precio venta unitario
-                <Tooltip text="Precio al vender una sola unidad." />
+                Precio venta
+                <Tooltip text="Precio de venta unitario o por kilo." />
               </Label>
               <MoneyInput
                 value={precioVenta}
@@ -215,7 +229,6 @@ export default function ProductoFormModal({
               />
             </div>
 
-            {/* Ganancia unitaria */}
             {gananciaUnitaria > 0 && (
               <div className="text-sm text-green-600">
                 Ganancia unitaria: ${formatMoney(gananciaUnitaria)}
@@ -226,11 +239,11 @@ export default function ProductoFormModal({
             <div className="space-y-1">
               <Label>Categoría</Label>
               <Select
-                defaultValue={initialData?.categoria || "general"}
+                value={categoria}
                 onValueChange={(v) => setValue("categoria", v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Categoría" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="general">General</SelectItem>
@@ -242,40 +255,36 @@ export default function ProductoFormModal({
             </div>
           </div>
 
-          {/* ---------- COLUMNA DERECHA ---------- */}
+          {/* ---------- DERECHA ---------- */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold">Packs (opcional)</h3>
-              <Tooltip text="Configuraciones de precio por cantidad. El sistema compara rentabilidad automáticamente." />
+              <Tooltip text="Precio especial por cantidad. El sistema avisa si es menos rentable." />
             </div>
 
             {packs.map((pack, i) => {
-              const unidades = Number(pack.unidades) || 0;
-              const precioPack = Number(pack.precioVentaPack) || 0;
+              const unidades = Number(pack.unidades || 0);
+              const precioPack = Number(pack.precioVentaPack || 0);
 
               const gananciaPack =
-                unidades > 0 && precioPack > 0 && precioCompra > 0
+                unidades > 0 && precioPack > 0
                   ? precioPack - precioCompra * unidades
                   : 0;
 
-              const gananciaUnidadNormal = gananciaUnitaria * unidades;
-
-              const packMenosRentable =
-                gananciaPack > 0 &&
-                gananciaUnidadNormal > 0 &&
-                gananciaPack < gananciaUnidadNormal;
+              const gananciaNormal = gananciaUnitaria * unidades;
+              const menosRentable =
+                gananciaPack > 0 && gananciaPack < gananciaNormal;
 
               return (
                 <div
                   key={i}
-                  className={`grid grid-cols-3 gap-2 items-center p-2 rounded border
-                  ${
-                    packMenosRentable
+                  className={`grid grid-cols-3 gap-2 items-center p-2 rounded border ${
+                    menosRentable
                       ? "border-red-400 bg-red-50"
                       : "border-gray-200"
                   }`}
                 >
-                  <div className="space-y-1">
+                  <div>
                     <Label>Unidades</Label>
                     <Input
                       type="number"
@@ -286,7 +295,7 @@ export default function ProductoFormModal({
                     />
                   </div>
 
-                  <div className="space-y-1">
+                  <div>
                     <Label>Precio pack</Label>
                     <MoneyInput
                       value={pack.precioVentaPack}
@@ -302,17 +311,16 @@ export default function ProductoFormModal({
                     <X size={16} />
                   </Button>
 
-                  {/* Info pack */}
                   {gananciaPack > 0 && (
                     <div className="col-span-3 text-xs">
                       <span className="text-green-600">
                         Ganancia pack: ${formatMoney(gananciaPack)}
                       </span>
 
-                      {packMenosRentable && (
+                      {menosRentable && (
                         <div className="text-red-600 mt-1">
-                          ⚠ Este pack es menos rentable que vender unidades
-                          sueltas (${formatMoney(gananciaUnidadNormal)})
+                          ⚠ Menos rentable que vender suelto ($
+                          {formatMoney(gananciaNormal)})
                         </div>
                       )}
                     </div>
@@ -327,31 +335,24 @@ export default function ProductoFormModal({
 
             {/* Stock */}
             <div className="grid grid-cols-2 gap-3 pt-4">
-              <div className="space-y-1">
-                <Label className="flex items-center gap-2">
-                  Stock
-                  <Tooltip text="Cantidad disponible en unidades." />
-                </Label>
+              <div>
+                <Label>Stock</Label>
                 <Input type="number" {...register("stock")} />
               </div>
-
-              <div className="space-y-1">
-                <Label className="flex items-center gap-2">
-                  Stock mínimo
-                  <Tooltip text="Se usa como alerta de reposición." />
-                </Label>
+              <div>
+                <Label>Stock mínimo</Label>
                 <Input type="number" {...register("stockMinimo")} />
               </div>
             </div>
 
             {/* Foto */}
-            <div className="space-y-1">
+            <div>
               <Label>Foto (URL)</Label>
               <Input {...register("foto")} />
             </div>
 
             {/* Descripción */}
-            <div className="space-y-1">
+            <div>
               <Label>Descripción</Label>
               <Textarea rows={3} {...register("descripcion")} />
             </div>
