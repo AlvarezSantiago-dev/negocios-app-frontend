@@ -19,11 +19,11 @@ import MoneyInput from "@/components/MoneyInput";
 import { formatMoney } from "../services/dashboardService";
 
 /**
- * Props esperadas:
- * - open: boolean
- * - onClose: fn
- * - onConfirm: fn({ efectivo, mp, transferencia })
- * - lastCierre?: { efectivo, mp, transferencia }  // SOLO referencia visual
+ * Props:
+ * - open
+ * - onClose
+ * - onConfirm({ efectivo, mp, transferencia })
+ * - lastCierre? -> SOLO referencia visual
  */
 export function AperturaModal({ open, onClose, onConfirm, lastCierre }) {
   const [form, setForm] = useState({
@@ -34,7 +34,6 @@ export function AperturaModal({ open, onClose, onConfirm, lastCierre }) {
 
   useEffect(() => {
     if (open) {
-      // Siempre se declara de cero (no se arrastran montos)
       setForm({ efectivo: "", mp: "", transferencia: "" });
     }
   }, [open]);
@@ -69,14 +68,12 @@ export function AperturaModal({ open, onClose, onConfirm, lastCierre }) {
               <DialogTitle>Apertura de Caja</DialogTitle>
             </DialogHeader>
 
-            {/* TEXTO CLAVE (UX + contabilidad) */}
             <p className="mt-2 text-sm text-gray-600">
               Declarás el dinero disponible al comenzar el día.
               <br />
               Aunque sea el mismo dinero que ayer, debe confirmarse nuevamente.
             </p>
 
-            {/* REFERENCIA VISUAL DEL ÚLTIMO CIERRE */}
             {lastCierre && (
               <div className="mt-3 rounded-md border bg-gray-50 p-3 text-sm text-gray-700">
                 <div className="font-medium mb-1">
@@ -98,56 +95,38 @@ export function AperturaModal({ open, onClose, onConfirm, lastCierre }) {
             )}
 
             <div className="mt-4 space-y-4">
-              {/* EFECTIVO */}
-              <div className="flex items-center gap-2">
-                <MoneyInput
-                  value={form.efectivo}
-                  placeholder="Efectivo inicial (0 si no hay)"
-                  onChange={(v) => setForm({ ...form, efectivo: v })}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Dinero físico disponible al iniciar el día.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              {/* MP */}
-              <div className="flex items-center gap-2">
-                <MoneyInput
-                  value={form.mp}
-                  placeholder="Mercado Pago inicial (0 si no hay)"
-                  onChange={(v) => setForm({ ...form, mp: v })}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Saldo disponible en Mercado Pago al inicio del día.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-
-              {/* TRANSFERENCIA */}
-              <div className="flex items-center gap-2">
-                <MoneyInput
-                  value={form.transferencia}
-                  placeholder="Transferencias iniciales (0 si no hay)"
-                  onChange={(v) => setForm({ ...form, transferencia: v })}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Saldo bancario disponible al comenzar el día.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              {[
+                {
+                  key: "efectivo",
+                  placeholder: "Efectivo inicial (0 si no hay)",
+                  tooltip: "Dinero físico disponible al iniciar el día.",
+                },
+                {
+                  key: "mp",
+                  placeholder: "Mercado Pago inicial (0 si no hay)",
+                  tooltip:
+                    "Saldo disponible en Mercado Pago al inicio del día.",
+                },
+                {
+                  key: "transferencia",
+                  placeholder: "Transferencias iniciales (0 si no hay)",
+                  tooltip: "Saldo bancario disponible al comenzar el día.",
+                },
+              ].map((f) => (
+                <div key={f.key} className="flex items-center gap-2">
+                  <MoneyInput
+                    value={form[f.key]}
+                    placeholder={f.placeholder}
+                    onChange={(v) => setForm({ ...form, [f.key]: v })}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>{f.tooltip}</TooltipContent>
+                  </Tooltip>
+                </div>
+              ))}
 
               <div className="text-right font-semibold text-gray-700">
                 Total inicial:{" "}

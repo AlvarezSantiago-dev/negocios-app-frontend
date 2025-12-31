@@ -47,7 +47,6 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
       return;
     }
 
-    setError("");
     try {
       await onConfirm({
         efectivo: Number(form.efectivo || 0),
@@ -73,28 +72,38 @@ export function CierreModal({ open, onClose, onConfirm, resumen }) {
               <DialogTitle>Cierre de Caja</DialogTitle>
             </DialogHeader>
 
-            <div className="mt-4 space-y-4">
-              {["efectivo", "mp", "transferencia"].map((field) => (
-                <div className="flex items-center gap-2" key={field}>
-                  <MoneyInput
-                    value={form[field]}
-                    placeholder={`${field[0].toUpperCase()}${field.slice(
-                      1
-                    )} declarado`}
-                    onChange={(v) => setForm({ ...form, [field]: v })}
-                  />
+            <p className="mt-2 text-sm text-gray-600">
+              Declarás el dinero con el que terminás el día.
+              <br />
+              Este monto quedará registrado como referencia histórica.
+            </p>
 
+            <div className="mt-4 space-y-4">
+              {[
+                {
+                  key: "efectivo",
+                  tooltip: "Dinero físico declarado al cierre.",
+                },
+                {
+                  key: "mp",
+                  tooltip: "Saldo declarado de Mercado Pago.",
+                },
+                {
+                  key: "transferencia",
+                  tooltip: "Saldo bancario declarado al finalizar el día.",
+                },
+              ].map((f) => (
+                <div key={f.key} className="flex items-center gap-2">
+                  <MoneyInput
+                    value={form[f.key]}
+                    placeholder={`${f.key} declarado`}
+                    onChange={(v) => setForm({ ...form, [f.key]: v })}
+                  />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="w-5 h-5 text-gray-400 cursor-pointer" />
                     </TooltipTrigger>
-                    <TooltipContent>
-                      {field === "efectivo"
-                        ? "Dinero físico declarado."
-                        : field === "mp"
-                        ? "Saldo declarado por Mercado Pago."
-                        : "Saldo declarado por transferencias bancarias."}
-                    </TooltipContent>
+                    <TooltipContent>{f.tooltip}</TooltipContent>
                   </Tooltip>
                 </div>
               ))}
