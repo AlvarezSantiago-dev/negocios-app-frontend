@@ -13,10 +13,33 @@ export default function useBarcodeScanner({
   const timeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    // 🔴 SI SE DESACTIVA → LIMPIAR TODO
+    if (!enabled) {
+      bufferRef.current = "";
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      return;
+    }
+
+    const isTypingInInput = () => {
+      const el = document.activeElement;
+      if (!el) return false;
+
+      return (
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.tagName === "SELECT" ||
+        el.isContentEditable
+      );
+    };
 
     const handleKeyDown = (e) => {
-      // 🔴 BLOQUEO GLOBAL DEL ENTER DEL SCANNER
+      // 🔴 NO ESCANEAR SI EL USUARIO ESTÁ ESCRIBIENDO
+      if (isTypingInInput()) return;
+
+      // 🔴 ENTER DEL SCANNER
       if (e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
@@ -24,11 +47,7 @@ export default function useBarcodeScanner({
         const code = bufferRef.current.trim();
 
         if (code.length > 0) {
-          try {
-            onScan(code);
-          } catch (err) {
-            console.error("onScan callback error", err);
-          }
+          onScan(code);
         }
 
         bufferRef.current = "";
@@ -38,20 +57,17 @@ export default function useBarcodeScanner({
       // ignorar teclas especiales
       if (e.key.length !== 1) return;
 
-      // reset timer
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
 
       bufferRef.current += e.key;
 
-      // timeout para distinguir tipeo humano
       timeoutRef.current = setTimeout(() => {
         bufferRef.current = "";
       }, interCharTimeout);
     };
 
-    // 🔴 CAPTURING = antes que React / Dialog / Form
     window.addEventListener("keydown", handleKeyDown, true);
 
     return () => {

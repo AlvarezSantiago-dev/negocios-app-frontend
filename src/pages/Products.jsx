@@ -1,4 +1,3 @@
-// src/pages/Productos.jsx (reemplaza tu archivo actual)
 import { useEffect, useState } from "react";
 import useProductsStore from "../store/productsStore";
 import ProductosTable from "../components/ProductosTable";
@@ -21,12 +20,14 @@ export default function Productos() {
     updateProduct,
     loading,
   } = useProductsStore();
+
   const { toast } = useToast();
 
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
-  //estados de impresion de codigo de barras.
+
+  // estados impresión
   const [printProduct, setPrintProduct] = useState(null);
   const [openPrint, setOpenPrint] = useState(false);
 
@@ -38,29 +39,27 @@ export default function Productos() {
     fetchProducts();
   }, []);
 
-  // Cuando se escanea en la pantalla de Productos: abrir modal de creación con codigo
+  // 🔧 SCAN EN PANTALLA PRODUCTOS
   const onScan = (codigo) => {
-    // si existe producto con ese barcode, abrimos edición
     const existente = products.find((p) => p.codigoBarras === codigo);
+
     if (existente) {
       setEditing(existente);
-      setOpenModal(true);
     } else {
-      // abrir modal en modo creación con el codigo pre puesto
       setEditing({
         codigoBarras: codigo,
         tipo: "unitario",
         categoria: "general",
       });
-
-      setOpenModal(true);
     }
+
+    setOpenModal(true);
   };
 
-  // hook del scanner activo en esta pantalla
+  // 🔧 scanner SOLO activo cuando el modal está cerrado
   useBarcodeScanner({
     onScan,
-    enabled: !openModal, // ⬅️ clave
+    enabled: !openModal,
     interCharTimeout: 60,
   });
 
@@ -79,7 +78,10 @@ export default function Productos() {
           description: `${data.nombre} fue agregado correctamente.`,
         });
       }
+
+      // 🔧 LIMPIEZA TOTAL POST GUARDADO
       setOpenModal(false);
+      setEditing(null);
     } catch (err) {
       toast({
         variant: "destructive",
@@ -104,9 +106,10 @@ export default function Productos() {
       });
     }
   };
+
   const closeModal = () => {
     setOpenModal(false);
-    setEditing(null);
+    setEditing(null); // 🔧 MUY IMPORTANTE
   };
 
   return (
@@ -114,6 +117,7 @@ export default function Productos() {
       {/* HEADER */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">Productos</h1>
+
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button
             className="bg-[#63b0cd] hover:bg-[#559bb4] text-white"
@@ -153,7 +157,7 @@ export default function Productos() {
         />
       </div>
 
-      {/* MODAL */}
+      {/* MODAL PRODUCTO */}
       <ProductoFormModal
         open={openModal}
         onClose={closeModal}
@@ -165,6 +169,7 @@ export default function Productos() {
         }}
       />
 
+      {/* MODAL IMPRESIÓN */}
       <PrintBarcodeModal
         open={openPrint}
         onClose={() => {
