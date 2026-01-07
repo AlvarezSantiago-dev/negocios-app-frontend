@@ -36,24 +36,47 @@ const money = (n) =>
   });
 
 /**
- * Encabezado corporativo simple (color + título)
+ * Encabezado corporativo moderno con gradiente simulado
  */
-function drawHeader(doc, titulo) {
-  doc.setFillColor(20, 90, 140);
-  doc.rect(0, 0, 210, 30, "F");
+function drawHeader(doc, titulo, isAnulado = false) {
+  // Fondo principal con colores más vibrantes
+  if (isAnulado) {
+    // Rojo para anulados
+    doc.setFillColor(220, 38, 38);
+  } else {
+    // Azul-púrpura para activos
+    doc.setFillColor(37, 99, 235);
+  }
+  doc.rect(0, 0, 210, 35, "F");
 
+  // Línea decorativa inferior
+  if (isAnulado) {
+    doc.setFillColor(239, 68, 68);
+  } else {
+    doc.setFillColor(147, 51, 234);
+  }
+  doc.rect(0, 30, 210, 5, "F");
+
+  // Título
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
+  doc.setFontSize(20);
   doc.setTextColor(255, 255, 255);
-  doc.text(titulo, 14, 20);
+  doc.text(titulo, 14, 18);
+
+  // Subtítulo si es anulado
+  if (isAnulado) {
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text("*** DOCUMENTO ANULADO ***", 14, 26);
+  }
 
   // fecha generación (alineada a la derecha)
   doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "normal");
   doc.text(
     `Generado: ${formatFechaArg(Date.now())} ${formatHoraArg(Date.now())}`,
     196,
-    20,
+    isAnulado ? 26 : 22,
     { align: "right" }
   );
 
@@ -61,23 +84,11 @@ function drawHeader(doc, titulo) {
 }
 
 /**
- * Util: dibuja una etiqueta de campo/valor de forma compacta
- */
-function drawKeyValueRow(doc, x, y, key, value) {
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text(key, x, y);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(String(value), x + 60, y);
-}
-
-/**
  * Página nueva con header ya dibujado
  */
-function nuevaPaginaConHeader(doc, titulo) {
+function nuevaPaginaConHeader(doc, titulo, isAnulado = false) {
   doc.addPage();
-  drawHeader(doc, titulo);
+  drawHeader(doc, titulo, isAnulado);
 }
 
 /**
@@ -85,15 +96,44 @@ function nuevaPaginaConHeader(doc, titulo) {
  */
 export function generarPDFCierreIndividual(cierre) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const isAnulado = cierre.estado === "anulado";
 
-  // Título
-  drawHeader(doc, "Cierre de Caja - Informe Diario");
+  // Título con detección de anulado
+  drawHeader(doc, "Cierre de Caja - Informe Diario", isAnulado);
 
-  // ------- Resumen principal (tarjeta) -------
-  const startY = 40;
-  doc.setFontSize(12);
+  // ------- Banner de advertencia si está anulado -------
+  let startY = 45;
+  if (isAnulado) {
+    doc.setFillColor(254, 226, 226); // bg-red-100
+    doc.roundedRect(14, startY, 182, 20, 3, 3, "F");
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(185, 28, 28); // text-red-700
+    doc.text("CIERRE ANULADO", 105, startY + 7, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(
+      `Motivo: ${cierre.anuladoMotivo || "No especificado"}`,
+      105,
+      startY + 12,
+      { align: "center" }
+    );
+    doc.text(`Anulado por: ${cierre.anuladoPor || "N/A"}`, 105, startY + 16, {
+      align: "center",
+    });
+
+    startY += 26;
+    doc.setTextColor(0, 0, 0);
+  }
+
+  // ------- Resumen principal -------
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("Resumen del Cierre", 14, startY);
+  doc.setTextColor(37, 99, 235); // text-blue-600
+  doc.text("RESUMEN DEL CIERRE", 14, startY);
+  doc.setTextColor(0, 0, 0);
 
   const resumen = [
     ["Fecha de cierre:", formatFechaArg(cierre.fecha)],
@@ -119,58 +159,70 @@ export function generarPDFCierreIndividual(cierre) {
     head: [],
     body: resumen,
     theme: "plain",
-    styles: { fontSize: 10 },
+    styles: { fontSize: 10, cellPadding: 2 },
     margin: { left: 14, right: 14 },
     tableLineWidth: 0,
+    alternateRowStyles: { fillColor: [249, 250, 251] },
   });
 
-  let y = doc.lastAutoTable.finalY + 8;
+  let y = doc.lastAutoTable.finalY + 10;
 
-  // ------- Totales por método (pequeñas tarjetas) -------
-  doc.setFontSize(12);
+  // ------- Totales por método (tarjetas coloridas) -------
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("Totales por método", 14, y);
-  y += 6;
+  doc.setTextColor(147, 51, 234); // text-purple-600
+  doc.text("TOTALES POR METODO DE PAGO", 14, y);
+  doc.setTextColor(0, 0, 0);
+  y += 8;
 
-  const boxW = (210 - 28) / 3; // ancho por tarjeta
-  const boxH = 16;
+  const boxW = (210 - 28) / 3;
+  const boxH = 18;
   const baseX = 14;
 
-  // Efectivo
-  doc.setFillColor(245, 247, 250);
+  // Efectivo - Verde
+  doc.setFillColor(209, 250, 229); // bg-green-100
   doc.roundedRect(baseX, y, boxW - 4, boxH, 3, 3, "F");
-  doc.setFontSize(10);
-  doc.setTextColor(25, 25, 25);
-  doc.text("Efectivo", baseX + 4, y + 6.5);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(21, 128, 61); // text-green-700
+  doc.text("EFECTIVO", baseX + 4, y + 6);
   doc.setFont("helvetica", "bold");
-  doc.text(`$ ${money(cierre.efectivo)}`, baseX + 4, y + 12);
+  doc.setFontSize(11);
+  doc.text(`$ ${money(cierre.efectivo)}`, baseX + 4, y + 13);
 
-  // MP
+  // MP - Azul
   const x2 = baseX + boxW;
-  doc.setFillColor(245, 247, 250);
+  doc.setFillColor(219, 234, 254); // bg-blue-100
   doc.roundedRect(x2, y, boxW - 4, boxH, 3, 3, "F");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("Mercado Pago", x2 + 4, y + 6.5);
+  doc.setFontSize(9);
+  doc.setTextColor(29, 78, 216); // text-blue-700
+  doc.text("MERCADO PAGO", x2 + 4, y + 6);
   doc.setFont("helvetica", "bold");
-  doc.text(`$ ${money(cierre.mp)}`, x2 + 4, y + 12);
+  doc.setFontSize(11);
+  doc.text(`$ ${money(cierre.mp)}`, x2 + 4, y + 13);
 
-  // Transferencia
+  // Transferencia - Púrpura
   const x3 = baseX + boxW * 2;
-  doc.setFillColor(245, 247, 250);
+  doc.setFillColor(243, 232, 255); // bg-purple-100
   doc.roundedRect(x3, y, boxW - 4, boxH, 3, 3, "F");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("Transferencias", x3 + 4, y + 6.5);
+  doc.setFontSize(9);
+  doc.setTextColor(126, 34, 206); // text-purple-700
+  doc.text("TRANSFERENCIAS", x3 + 4, y + 6);
   doc.setFont("helvetica", "bold");
-  doc.text(`$ ${money(cierre.transferencia)}`, x3 + 4, y + 12);
+  doc.setFontSize(11);
+  doc.text(`$ ${money(cierre.transferencia)}`, x3 + 4, y + 13);
 
-  y += boxH + 10;
+  doc.setTextColor(0, 0, 0);
+  y += boxH + 12;
 
   // ------- Movimientos (opcional breve) -------
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("Movimientos (resumen)", 14, y);
+  doc.setTextColor(16, 185, 129); // text-green-500
+  doc.text("RESUMEN DE MOVIMIENTOS", 14, y);
+  doc.setTextColor(0, 0, 0);
   y += 6;
 
   // Construir una tabla simple de resumen de movimientos por tipo
@@ -186,18 +238,26 @@ export function generarPDFCierreIndividual(cierre) {
     head: [movimientosResumen[0]],
     body: movimientosResumen.slice(1),
     theme: "grid",
-    headStyles: { fillColor: [53, 121, 166], textColor: 255 },
-    styles: { fontSize: 10 },
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: 255,
+      fontSize: 10,
+      fontStyle: "bold",
+    },
+    styles: { fontSize: 10, cellPadding: 3 },
     margin: { left: 14, right: 14 },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
   });
 
-  y = doc.lastAutoTable.finalY + 10;
+  y = doc.lastAutoTable.finalY + 12;
 
   // ------- Detalle de ventas (puede ser largo) -------
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("Detalle de Ventas", 14, y);
-  y += 6;
+  doc.setTextColor(249, 115, 22); // text-orange-500
+  doc.text("DETALLE DE VENTAS", 14, y);
+  doc.setTextColor(0, 0, 0);
+  y += 8;
 
   if (!Array.isArray(cierre.ventas) || cierre.ventas.length === 0) {
     doc.setFontSize(10);
@@ -210,8 +270,8 @@ export function generarPDFCierreIndividual(cierre) {
 
       // Revisar si queda espacio, si no -> nueva página
       if (y > 260) {
-        nuevaPaginaConHeader(doc, "Cierre de Caja - Informe Diario");
-        y = 36;
+        nuevaPaginaConHeader(doc, "Cierre de Caja - Informe Diario", isAnulado);
+        y = 45;
       }
 
       // Encabezado venta
@@ -248,9 +308,15 @@ export function generarPDFCierreIndividual(cierre) {
         head: [["Producto", "Cant.", "Precio", "Total"]],
         body: prodBody,
         theme: "grid",
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [230, 230, 230], textColor: 0 },
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: {
+          fillColor: [249, 115, 22],
+          textColor: 255,
+          fontSize: 9,
+          fontStyle: "bold",
+        },
         margin: { left: 16, right: 14 },
+        alternateRowStyles: { fillColor: [254, 243, 199] }, // bg-orange-100
         columnStyles: {
           0: { cellWidth: 80 },
           1: { halign: "center", cellWidth: 18 },
@@ -271,13 +337,15 @@ export function generarPDFCierreIndividual(cierre) {
   // ------- Totales agregados (reafirmar cifras) -------
   if (y > 240) {
     // nueva página si falta espacio
-    nuevaPaginaConHeader(doc, "Cierre de Caja - Informe Diario");
-    y = 36;
+    nuevaPaginaConHeader(doc, "Cierre de Caja - Informe Diario", isAnulado);
+    y = 45;
   }
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("Totales finales", 14, y);
+  doc.setFontSize(14);
+  doc.setTextColor(147, 51, 234); // text-purple-600
+  doc.text("TOTALES FINALES", 14, y);
+  doc.setTextColor(0, 0, 0);
   y += 6;
 
   const totalesFinales = [
@@ -300,9 +368,15 @@ export function generarPDFCierreIndividual(cierre) {
     head: [["Campo", "Valor"]],
     body: totalesFinales,
     theme: "grid",
-    headStyles: { fillColor: [53, 121, 166], textColor: 255 },
-    styles: { fontSize: 10 },
+    headStyles: {
+      fillColor: [147, 51, 234],
+      textColor: 255,
+      fontSize: 10,
+      fontStyle: "bold",
+    },
+    styles: { fontSize: 10, cellPadding: 3 },
     margin: { left: 14, right: 14 },
+    alternateRowStyles: { fillColor: [249, 250, 251] },
   });
 
   // Pie

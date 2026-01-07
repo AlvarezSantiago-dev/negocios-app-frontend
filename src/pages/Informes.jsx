@@ -7,28 +7,33 @@ import {
 } from "@/services/informesService";
 import { motion } from "framer-motion";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts";
-import {
-  CalendarDays,
-  TrendingUp,
   DollarSign,
-  LineChart as LineChartIcon,
+  TrendingUp,
+  Package,
+  ShoppingCart,
+  BarChart3,
+  PieChart,
+  RefreshCw,
+  Loader2,
+  Calendar,
+  Award,
+  AlertCircle,
 } from "lucide-react";
+
+// Componentes nuevos
+import StatCard from "@/components/informes/StatCard";
+import ColorfulBarChart from "@/components/informes/ColorfulBarChart";
+import TrendChart from "@/components/informes/TrendChart";
+import DataTable from "@/components/informes/DataTable";
+import DateRangeSelector from "@/components/informes/DateRangeSelector";
 
 export default function Informes() {
   const hoy = new Date().toISOString().substring(0, 10);
   const year = new Date().getFullYear();
   const month = new Date().getMonth() + 1;
 
-  const [tab, setTab] = useState("diarias");
+  const [selectedDate, setSelectedDate] = useState(hoy);
+  const [tab, setTab] = useState("general");
   const [diarias, setDiarias] = useState([]);
   const [mensuales, setMensuales] = useState([]);
   const [ganancias, setGananciasState] = useState({});
@@ -38,207 +43,319 @@ export default function Informes() {
 
   useEffect(() => {
     cargar();
-  }, []);
+  }, [selectedDate]);
 
   async function cargar() {
     setLoading(true);
 
-    const [d, m, g, u7] = await Promise.all([
-      fetchVentasDiarias(hoy),
-      fetchVentasMensuales(year, month),
-      fetchGanancias(year, month),
-      fetchUltimos7Dias(),
-    ]);
+    try {
+      const [d, m, g, u7] = await Promise.all([
+        fetchVentasDiarias(selectedDate),
+        fetchVentasMensuales(year, month),
+        fetchGanancias(year, month),
+        fetchUltimos7Dias(),
+      ]);
 
-    setDiarias(d);
-    setMensuales(m);
-    setGananciasState(g);
-    setUltimos7(u7);
+      console.log("📊 Datos recibidos:", { d, m, g, u7 });
 
-    setLoading(false);
+      setDiarias(d);
+      setMensuales(m);
+      setGananciasState(g);
+      setUltimos7(u7);
+    } catch (error) {
+      console.error("❌ Error cargando informes:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (loading)
+  if (loading) {
     return (
-      <p className="p-6 animate-pulse text-gray-600">Cargando informes...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">
+            Cargando informes...
+          </p>
+        </div>
+      </div>
     );
+  }
+
+  const tabs = [
+    { id: "general", label: "📊 General", icon: BarChart3 },
+    { id: "ventas", label: "🛒 Ventas", icon: ShoppingCart },
+    { id: "productos", label: "📦 Productos", icon: Package },
+  ];
 
   return (
-    <div className="p-6 space-y-10 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-      {/* Titulo */}
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-3xl font-bold flex items-center gap-3"
-      >
-        <LineChartIcon /> Informes y Reportes
-      </motion.h1>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KPI
-          icon={<CalendarDays />}
-          label="Ventas del Día"
-          value={`$${diarias.totalVendido ?? 0}`}
-        />
-        <KPI
-          icon={<TrendingUp />}
-          label="Ganancia del Día"
-          value={`$${diarias.gananciaTotal ?? 0}`}
-        />
-        <KPI
-          icon={<DollarSign />}
-          label="Ganancia Mensual"
-          value={`$${ganancias.totalGanado ?? 0}`}
-        />
-      </div>
-
-      {/* Últimos 7 días */}
-      <Card title="Últimos 7 días">
-        <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={ultimos7}>
-            <XAxis dataKey="fecha" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="totalVendido" strokeWidth={3} />
-          </LineChart>
-        </ResponsiveContainer>
-      </Card>
-
-      {/* Tabs */}
-      <div className="flex gap-3 border-b border-gray-300 pb-2">
-        {["diarias", "mensuales", "ganancias"].map((t) => (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              📈 Informes y Análisis
+            </h1>
+            <p className="text-gray-600">
+              Panel de métricas y estadísticas de tu negocio
+            </p>
+          </div>
           <button
-            key={t}
-            className={`px-4 py-2 rounded-md ${
-              tab === t
-                ? "bg-blue-600 text-white shadow"
-                : "bg-white text-gray-700 border"
-            }`}
-            onClick={() => setTab(t)}
+            onClick={cargar}
+            disabled={loading}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg transition-all transform hover:scale-105 disabled:opacity-50"
           >
-            {t.toUpperCase()}
+            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+            Actualizar
           </button>
-        ))}
-      </div>
+        </motion.div>
 
-      {/* TAB - DIARIAS */}
-      {tab === "diarias" && (
-        <Card title="Ventas Diarias">
-          <Table
-            headers={["Hora", "Cant.", "Total", "Método"]}
-            rows={(diarias.ventas ?? []).map((v) => [
-              new Date(v.fecha).toLocaleTimeString("es-AR"),
-              v.items?.length ?? 1,
-              `$${v.totalVenta ?? 0}`,
-              v.metodoPago ?? "Efectivo",
-            ])}
+        {/* Selector de Fecha */}
+        <DateRangeSelector
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+        />
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Ventas del Día"
+            value={`$${(diarias.totalVendido ?? 0).toLocaleString()}`}
+            subtitle={`${(diarias.ventas ?? []).length} transacciones`}
+            icon={DollarSign}
+            color="blue"
           />
-        </Card>
-      )}
-
-      {/* TAB - MENSUALES */}
-      {tab === "mensuales" && (
-        <Card title="Ventas Mensuales">
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={mensuales}>
-              <XAxis dataKey="fecha" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="totalDia" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      )}
-
-      {/* TAB - GANANCIAS */}
-      {tab === "ganancias" && (
-        <Card title="Ganancias por Producto">
-          <Table
-            headers={["Producto", "Cantidad", "Unit.", "Total"]}
-            rows={(ganancias.detalles ?? []).map((g) => [
-              g.nombre,
-              g.cantidadVendida,
-              `$${g.gananciaUnitaria}`,
-              `$${g.gananciaTotal}`,
-            ])}
+          <StatCard
+            title="Ganancia del Día"
+            value={`$${(diarias.gananciaTotal ?? 0).toLocaleString()}`}
+            subtitle={`Margen ${
+              diarias.totalVendido
+                ? (
+                    (diarias.gananciaTotal / diarias.totalVendido) *
+                    100
+                  ).toFixed(1)
+                : 0
+            }%`}
+            icon={TrendingUp}
+            color="green"
           />
-        </Card>
-      )}
+          <StatCard
+            title="Ganancia Mensual"
+            value={`$${(ganancias.totalGanado ?? 0).toLocaleString()}`}
+            subtitle={`${ganancias.totalProductos ?? 0} productos vendidos`}
+            icon={Package}
+            color="purple"
+          />
+          <StatCard
+            title="Productos Vendidos"
+            value={(ganancias.detalles ?? []).length}
+            subtitle="Productos diferentes"
+            icon={ShoppingCart}
+            color="orange"
+          />
+        </div>
 
-      {/* Botón actualizar */}
-      <button
-        onClick={cargar}
-        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl shadow"
-      >
-        🔄 Actualizar Informes
-      </button>
-    </div>
-  );
-}
-
-function KPI({ icon, label, value }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow p-5 border border-gray-100"
-    >
-      <div className="flex items-center gap-2 text-gray-500">
-        {icon} {label}
-      </div>
-      <div className="text-3xl font-bold mt-2">{value}</div>
-    </motion.div>
-  );
-}
-
-function Card({ title, children }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-6 rounded-2xl shadow border border-gray-100 space-y-4"
-    >
-      <h2 className="text-xl font-semibold">{title}</h2>
-      {children}
-    </motion.div>
-  );
-}
-
-function Table({ headers, rows }) {
-  return (
-    <table className="w-full border-collapse">
-      <thead>
-        <tr className="bg-gray-100 text-left text-gray-600">
-          {headers.map((h, i) => (
-            <th key={i} className="p-2 border-b">
-              {h}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.length > 0 ? (
-          rows.map((r, i) => (
-            <tr key={i} className="hover:bg-gray-50">
-              {r.map((cell, j) => (
-                <td key={j} className="p-2 border-b text-gray-700">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td
-              colSpan={headers.length}
-              className="p-3 text-center text-gray-500"
+        {/* Tabs Navigation */}
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all whitespace-nowrap ${
+                tab === t.id
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-105"
+                  : "bg-white text-gray-700 hover:bg-gray-50 shadow"
+              }`}
             >
-              No hay datos...
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+              <t.icon className="w-5 h-5" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* TAB CONTENT */}
+        <div className="space-y-6">
+          {/* TAB: GENERAL */}
+          {tab === "general" && (
+            <>
+              <TrendChart
+                data={ultimos7}
+                title="📅 Tendencia - Últimos 7 días"
+                type="area"
+              />
+
+              <ColorfulBarChart
+                data={mensuales.slice(0, 15)}
+                dataKey="totalDia"
+                title="📊 Ventas Mensuales (últimos 15 días)"
+              />
+            </>
+          )}
+
+          {/* TAB: VENTAS */}
+          {tab === "ventas" && (
+            <>
+              {(diarias.ventas ?? []).length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-2xl shadow-lg p-12 border border-gray-100 text-center"
+                >
+                  <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                    No hay ventas registradas
+                  </h3>
+                  <p className="text-gray-500">
+                    No se encontraron ventas para el día {selectedDate}
+                  </p>
+                </motion.div>
+              ) : (
+                <DataTable
+                  title={`🛒 Detalle de Ventas - ${selectedDate}`}
+                  headers={[
+                    "Hora",
+                    "Cantidad Items",
+                    "Total Venta",
+                    "Método Pago",
+                    "Ganancia",
+                  ]}
+                  data={diarias.ventas ?? []}
+                  renderRow={(venta, idx) => (
+                    <>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">
+                        {new Date(venta.fecha).toLocaleTimeString("es-AR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
+                          {venta.items?.length ?? 0} items
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold text-green-600">
+                        ${(venta.totalVenta ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            venta.metodoPago === "Efectivo"
+                              ? "bg-green-100 text-green-800"
+                              : venta.metodoPago === "Débito"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {venta.metodoPago ?? "Efectivo"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-purple-600">
+                        ${(venta.gananciaTotal ?? 0).toFixed(0)}
+                      </td>
+                    </>
+                  )}
+                />
+              )}
+            </>
+          )}
+
+          {/* TAB: PRODUCTOS */}
+          {tab === "productos" && (
+            <>
+              {(ganancias.detalles ?? []).length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-2xl shadow-lg p-12 border border-gray-100 text-center"
+                >
+                  <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                    No hay datos de productos
+                  </h3>
+                  <p className="text-gray-500">
+                    No se encontraron ventas de productos en el período
+                    seleccionado
+                  </p>
+                </motion.div>
+              ) : (
+                <>
+                  {/* Top 5 Productos más vendidos */}
+                  <ColorfulBarChart
+                    data={(ganancias.detalles ?? []).slice(0, 8).map((p) => ({
+                      fecha: p.nombre,
+                      totalDia: p.gananciaTotal,
+                      label: p.nombre,
+                    }))}
+                    dataKey="totalDia"
+                    title="🏆 Top 8 Productos por Ganancia"
+                  />
+
+                  {/* Tabla detallada de productos */}
+                  <DataTable
+                    title="📦 Ganancias por Producto (Este Mes)"
+                    headers={[
+                      "Producto",
+                      "Cantidad Vendida",
+                      "Ganancia Unitaria",
+                      "Ganancia Total",
+                      "% del Total",
+                    ]}
+                    data={ganancias.detalles ?? []}
+                    renderRow={(producto, idx) => {
+                      const porcentaje = (
+                        (producto.gananciaTotal /
+                          (ganancias.totalGanado || 1)) *
+                        100
+                      ).toFixed(1);
+                      return (
+                        <>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            <div className="flex items-center gap-2">
+                              {idx < 3 && (
+                                <Award className="w-4 h-4 text-yellow-500" />
+                              )}
+                              {producto.nombre}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full font-semibold">
+                              {producto.cantidadVendida} unidades
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                            ${(producto.gananciaUnitaria ?? 0).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-bold text-green-600">
+                            ${(producto.gananciaTotal ?? 0).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-full"
+                                  style={{ width: `${porcentaje}%` }}
+                                />
+                              </div>
+                              <span className="text-gray-700 font-semibold text-xs">
+                                {porcentaje}%
+                              </span>
+                            </div>
+                          </td>
+                        </>
+                      );
+                    }}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

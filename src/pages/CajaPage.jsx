@@ -1,64 +1,114 @@
-// Redesigned CajaPage Component
-// (All logic preserved, only visual/layout changes)
-
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  DollarSign,
+  Wallet,
+  Smartphone,
+  CreditCard,
+  RefreshCw,
+  Plus,
+  XCircle,
+  CheckCircle,
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import useCajaStore from "../store/useCajaStore";
 import { AperturaModal } from "@/components/AperturaModal";
 import { CierreModal } from "@/components/CierreModal";
-import { useEffect, useState } from "react";
 import MovimientoFormModal from "../components/MovimientoFormModal";
 import MovimientosTable from "../components/MovimientosTable";
 import VentaFormModal from "../components/VentaFormModal";
 import VentasTable from "../components/VentasTable";
-import useCajaStore from "../store/useCajaStore";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-import { motion } from "framer-motion";
-import { DollarSign, Info, RefreshCcw, Smartphone, Wallet } from "lucide-react";
 import { formatMoney } from "../services/dashboardService";
 
-function KPIBox({ label, value, icon, color, tooltip }) {
+// Componente de Métrica Moderna
+function MetricCardCaja({ label, value, icon: Icon, color, subtitle }) {
+  const colors = {
+    blue: {
+      gradient: "from-blue-500 to-blue-600",
+      bg: "bg-blue-50",
+      icon: "bg-blue-100 text-blue-600",
+    },
+    green: {
+      gradient: "from-green-500 to-green-600",
+      bg: "bg-green-50",
+      icon: "bg-green-100 text-green-600",
+    },
+    purple: {
+      gradient: "from-purple-500 to-purple-600",
+      bg: "bg-purple-50",
+      icon: "bg-purple-100 text-purple-600",
+    },
+    orange: {
+      gradient: "from-orange-500 to-orange-600",
+      bg: "bg-orange-50",
+      icon: "bg-orange-100 text-orange-600",
+    },
+  };
+
+  const scheme = colors[color] || colors.blue;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
     >
-      <Card className="rounded-2xl shadow-lg border border-gray-200 bg-white/95 backdrop-blur-md hover:shadow-xl transition-all">
-        <CardContent className="p-5">
-          <div className="flex justify-between items-center text-gray-700">
-            <div className="flex items-center gap-2 font-semibold text-sm">
-              {icon}
-              {label}
-              {tooltip && (
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="w-4 h-4 text-gray-400 cursor-pointer" />
-                  </TooltipTrigger>
-                  <TooltipContent>{tooltip}</TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-            <span className="text-2xl font-extrabold" style={{ color }}>
-              {value}
-            </span>
+      <div className={`h-1.5 bg-gradient-to-r ${scheme.gradient}`} />
+      <div className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-600 mb-2">{label}</p>
+            <h3 className="text-3xl font-bold text-gray-900">{value}</h3>
+            {subtitle && (
+              <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+            )}
           </div>
-        </CardContent>
-      </Card>
+          <div className={`p-3 rounded-xl ${scheme.icon}`}>
+            <Icon className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
     </motion.div>
+  );
+}
+
+// Componente de Botón de Acción
+function ActionButton({
+  onClick,
+  disabled,
+  variant = "primary",
+  children,
+  icon: Icon,
+}) {
+  const variants = {
+    primary:
+      "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white",
+    danger:
+      "bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white",
+    success:
+      "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white",
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]}`}
+    >
+      {Icon && <Icon className="w-5 h-5" />}
+      {children}
+    </motion.button>
   );
 }
 
 export default function CajaPage() {
   const {
     ventasTodas = [],
-    ventas = [],
     resumen = {},
     allmovimientos = [],
     fetchCaja,
@@ -88,7 +138,7 @@ export default function CajaPage() {
     if (fetchCaja) fetchCaja();
     if (fetchCierreData) fetchCierreData();
     if (fetchVentas) fetchVentas();
-  }, [fetchCaja, fetchCierreData]);
+  }, [fetchCaja, fetchCierreData, fetchVentas]);
 
   const saveMovimiento = (data) => {
     if (!data) return;
@@ -97,223 +147,317 @@ export default function CajaPage() {
     setEditing(null);
   };
 
+  const handleApertura = async (montos) => {
+    if (abrirCaja) await abrirCaja(montos);
+    setModalApertura(false);
+  };
+
+  const handleCierre = async (montos) => {
+    if (cerrarCaja) await cerrarCaja(montos);
+    setModalCierre(false);
+  };
+
+  // Calcular totales de movimientos
+  const totalIngresos = allmovimientos
+    .filter((m) => m.tipo === "ingreso")
+    .reduce((acc, m) => acc + (m.monto || 0), 0);
+
+  const totalEgresos = allmovimientos
+    .filter((m) => m.tipo === "egreso")
+    .reduce((acc, m) => acc + (m.monto || 0), 0);
+
+  if (loading && !resumen) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">Cargando caja...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <TooltipProvider>
-      <div className="p-8 space-y-10 bg-gray-50 min-h-screen">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* HEADER */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center"
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
-          <h2 className="text-4xl font-bold text-gray-800 tracking-tight">
-            Caja
-          </h2>
-          <Button
-            variant="outline"
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              💰 Gestión de Caja
+            </h1>
+            <p className="text-gray-600">
+              Administra los ingresos y egresos de tu negocio
+            </p>
+          </div>
+
+          <ActionButton
             onClick={() => fetchCaja && fetchCaja()}
-            className="flex gap-2 items-center"
+            icon={RefreshCw}
+            variant="primary"
           >
-            <RefreshCcw className="w-4 h-4" /> Actualizar
-          </Button>
+            Actualizar
+          </ActionButton>
         </motion.div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <KPIBox
-            label="Total Caja"
-            value={`$${formatMoney(resumen?.total || 0)}`}
-            icon={<Wallet className="w-5 h-5 opacity-70" />}
-            color="#0f172a"
-            tooltip="Suma de todos los métodos de ingreso."
-          />
-          <KPIBox
-            label="Efectivo"
-            value={`$${formatMoney(resumen?.efectivo || 0)}`}
-            icon={<DollarSign className="w-5 h-5 opacity-70" />}
-            color="#065f46"
-            tooltip="Dinero físico en caja."
-          />
-          <KPIBox
-            label="Mercado Pago"
-            value={`$${formatMoney(resumen?.mp || 0)}`}
-            icon={<Smartphone className="w-5 h-5 opacity-70" />}
-            color="#0369a1"
-            tooltip="Ingresos a través de Mercado Pago."
-          />
-          <KPIBox
-            label="Transferencia"
-            value={`$${formatMoney(resumen?.transferencia || 0)}`}
-            icon={<Smartphone className="w-5 h-5 opacity-70" />}
-            color="#854d0e"
-            tooltip="Ingresos por transferencias bancarias."
-          />
-        </div>
+        {/* ESTADO DE CAJA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`p-6 rounded-2xl shadow-lg border-l-4 ${
+            resumen?.abierta
+              ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-500"
+              : "bg-gradient-to-r from-red-50 to-orange-50 border-red-500"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {resumen?.abierta ? (
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              ) : (
+                <XCircle className="w-10 h-10 text-red-600" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Estado de Caja
+                </p>
+                <p
+                  className={`text-2xl font-bold ${
+                    resumen?.abierta ? "text-green-700" : "text-red-700"
+                  }`}
+                >
+                  {resumen?.abierta ? "Caja Abierta" : "Caja Cerrada"}
+                </p>
+              </div>
+            </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3 pt-2">
-          <Button
-            onClick={() => setModalApertura(true)}
-            disabled={resumen?.aperturaHoy || loading}
-          >
-            Abrir Caja
-          </Button>
+            <div className="flex flex-wrap gap-3">
+              <ActionButton
+                onClick={() => setModalApertura(true)}
+                disabled={resumen?.aperturaHoy || loading}
+                variant="success"
+                icon={CheckCircle}
+              >
+                Abrir Caja
+              </ActionButton>
 
-          <Button
-            variant="destructive"
-            onClick={() => setModalCierre(true)}
-            disabled={
-              !resumen?.abierta ||
-              resumen?.cierreHoy ||
-              loadingCierre ||
-              cerrando
-            }
-          >
-            {loadingCierre || cerrando ? "Cerrando..." : "Cerrar Caja"}
-          </Button>
+              <ActionButton
+                onClick={() => setModalCierre(true)}
+                disabled={
+                  !resumen?.abierta ||
+                  resumen?.cierreHoy ||
+                  loadingCierre ||
+                  cerrando
+                }
+                variant="danger"
+                icon={XCircle}
+              >
+                {loadingCierre || cerrando ? "Cerrando..." : "Cerrar Caja"}
+              </ActionButton>
 
-          <Button
-            onClick={() => {
-              if (!resumen?.abierta) return;
-              setEditing(null);
-              setModalMov(true);
-            }}
-          >
-            Nuevo movimiento
-          </Button>
-        </div>
-
-        {/* Tables */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-          <Card className="shadow-md border border-gray-200 bg-white rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">
-                Movimientos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MovimientosTable
-                data={allmovimientos || []}
-                cajaAbierta={resumen?.abierta}
-                onEdit={(m) => {
-                  setEditing(m);
+              <ActionButton
+                onClick={() => {
+                  if (!resumen?.abierta) return;
+                  setEditing(null);
                   setModalMov(true);
                 }}
-                onDelete={(id) => eliminarMovimiento(id)}
-              />
-            </CardContent>
-          </Card>
+                disabled={!resumen?.abierta}
+                variant="primary"
+                icon={Plus}
+              >
+                Nuevo Movimiento
+              </ActionButton>
+            </div>
+          </div>
+        </motion.div>
 
-          <Card className="shadow-md border border-gray-200 bg-white rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold">Ventas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <VentasTable
-                data={ventasTodas || []}
-                cajaAbierta={resumen?.abierta}
-                onDelete={(id) => eliminarVenta(id)}
-              />
-            </CardContent>
-          </Card>
+        {/* MÉTRICAS KPI */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCardCaja
+            label="Total en Caja"
+            value={`$${formatMoney(resumen?.total || 0)}`}
+            icon={Wallet}
+            color="blue"
+            subtitle="Suma de todos los métodos"
+          />
+          <MetricCardCaja
+            label="Efectivo"
+            value={`$${formatMoney(resumen?.efectivo || 0)}`}
+            icon={DollarSign}
+            color="green"
+            subtitle="Dinero físico"
+          />
+          <MetricCardCaja
+            label="MercadoPago"
+            value={`$${formatMoney(resumen?.mp || 0)}`}
+            icon={Smartphone}
+            color="purple"
+            subtitle="Pagos digitales"
+          />
+          <MetricCardCaja
+            label="Transferencias"
+            value={`$${formatMoney(resumen?.transferencia || 0)}`}
+            icon={CreditCard}
+            color="orange"
+            subtitle="Transferencias bancarias"
+          />
         </div>
 
-        {/* Cierre */}
-        {cierreHoy && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <Card className="shadow-lg border border-gray-200 bg-white/90 backdrop-blur-md rounded-2xl mt-8">
-              <CardHeader>
-                <CardTitle>Cierre de hoy</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
-                  <div className="font-medium">
-                    Ventas: {cierreHoy?.cantidadVentas || 0}
-                  </div>
-                  <div className="font-medium">
-                    Total: ${formatMoney(cierreHoy?.total || 0)}
-                  </div>
-                </div>
-
-                <h3 className="mt-3 font-semibold">Detalle de ventas</h3>
-                <table className="w-full text-sm mt-2">
-                  <thead>
-                    <tr>
-                      <th className="p-2 text-left">Hora</th>
-                      <th className="p-2 text-left">Método</th>
-                      <th className="p-2 text-left">Total</th>
-                      <th className="p-2 text-left">Productos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(cierreHoy?.ventas || []).map((v) => (
-                      <tr key={v.idVenta} className="border-t">
-                        <td className="p-2">
-                          {new Date(v.hora).toLocaleTimeString()}
-                        </td>
-                        <td className="p-2 capitalize">{v.metodo}</td>
-                        <td className="p-2">${formatMoney(v.total)}</td>
-                        <td className="p-2">
-                          {(v.productos || []).map((p) => (
-                            <div key={p.id}>
-                              {p.cantidad}x {p.nombre} - $
-                              {formatMoney(p.precio)}
-                            </div>
-                          ))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+        {/* RESUMEN DE MOVIMIENTOS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-green-100">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Ingresos
+                </p>
+                <p className="text-2xl font-bold text-green-600">
+                  ${formatMoney(totalIngresos)}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500">
+              {allmovimientos.filter((m) => m.tipo === "ingreso").length}{" "}
+              movimientos
+            </p>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-red-100">
+                <TrendingDown className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Egresos
+                </p>
+                <p className="text-2xl font-bold text-red-600">
+                  ${formatMoney(totalEgresos)}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500">
+              {allmovimientos.filter((m) => m.tipo === "egreso").length}{" "}
+              movimientos
+            </p>
+          </motion.div>
+        </div>
+
+        {/* TABLA DE MOVIMIENTOS */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+        >
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-xl font-bold text-gray-900">
+              📊 Movimientos de Caja
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Registro de todos los ingresos y egresos
+            </p>
+          </div>
+          <div className="p-6">
+            <MovimientosTable
+              data={allmovimientos}
+              cajaAbierta={resumen?.abierta}
+              onEdit={(mov) => {
+                setEditing(mov);
+                setModalMov(true);
+              }}
+              onDelete={eliminarMovimiento}
+            />
+          </div>
+        </motion.div>
+
+        {/* TABLA DE VENTAS */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+        >
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-xl font-bold text-gray-900">
+              🛒 Ventas del Día
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Registro de todas las ventas realizadas
+            </p>
+          </div>
+          <div className="p-6">
+            <VentasTable
+              data={ventasTodas}
+              cajaAbierta={resumen?.abierta}
+              onEdit={(venta) => {
+                setEditingVenta(venta);
+                setModalVenta(true);
+              }}
+              onDelete={eliminarVenta}
+            />
+          </div>
+        </motion.div>
+
+        {/* MODALES */}
+        {modalApertura && (
+          <AperturaModal
+            open={modalApertura}
+            onClose={() => setModalApertura(false)}
+            onConfirm={handleApertura}
+          />
         )}
 
-        {/* Modals */}
-        <MovimientoFormModal
-          open={modalMov}
-          cajaAbierta={resumen?.abierta}
-          initialData={editing || null}
-          onClose={() => {
-            setModalMov(false);
-            setEditing(null);
-          }}
-          onSave={saveMovimiento}
-        />
+        {modalCierre && (
+          <CierreModal
+            open={modalCierre}
+            onClose={() => setModalCierre(false)}
+            onConfirm={handleCierre}
+            resumen={resumen}
+          />
+        )}
 
-        <AperturaModal
-          open={modalApertura}
-          onClose={() => setModalApertura(false)}
-          onConfirm={async (montos) => {
-            if (abrirCaja) await abrirCaja(montos);
-            setModalApertura(false);
-          }}
-        />
+        {modalMov && (
+          <MovimientoFormModal
+            open={modalMov}
+            onClose={() => {
+              setModalMov(false);
+              setEditing(null);
+            }}
+            onSave={saveMovimiento}
+            initialData={editing}
+            cajaAbierta={resumen?.abierta}
+          />
+        )}
 
-        <CierreModal
-          open={modalCierre}
-          onClose={() => setModalCierre(false)}
-          resumen={resumen || {}}
-          onConfirm={async (montos) => {
-            if (cerrarCaja) await cerrarCaja(montos);
-            setModalCierre(false);
-          }}
-        />
-
-        <VentaFormModal
-          open={modalVenta}
-          initialData={editingVenta}
-          onClose={() => {
-            setModalVenta(false);
-            setEditingVenta(null);
-          }}
-          onSave={(datos) => {
-            if (!editingVenta?._id) return;
-            editarVenta(editingVenta._id, datos);
-          }}
-        />
+        {modalVenta && (
+          <VentaFormModal
+            open={modalVenta}
+            onClose={() => {
+              setModalVenta(false);
+              setEditingVenta(null);
+            }}
+            onSave={(data) => {
+              if (editingVenta) editarVenta(editingVenta._id, data);
+              setEditingVenta(null);
+            }}
+            initialData={editingVenta}
+          />
+        )}
       </div>
-    </TooltipProvider>
+    </div>
   );
 }

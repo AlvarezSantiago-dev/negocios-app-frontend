@@ -2,16 +2,18 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import useCajaStore from "../store/useCajaStore";
 import BienvenidaDashboard from "@/components/dashboard/BienvenidaDashboard";
-import MovimientosTable from "../components/dashboard/MovimientosTable";
-import AccesosRapidos from "@/components/dashboard/AccesosRapidos";
-import StockCriticoCard from "@/components/dashboard/StockCriticoCard";
+import MetricCard from "@/components/dashboard/MetricCard";
+import CajaResumenCard from "@/components/dashboard/CajaResumenCard";
+import MovimientosCard from "@/components/dashboard/MovimientosCard";
+import StockAlertCard from "@/components/dashboard/StockAlertCard";
+import QuickActionsCard from "@/components/dashboard/QuickActionsCard";
 import {
   DollarSign,
   TrendingUp,
   ShoppingCart,
-  BarChart2,
-  Wallet,
   AlertTriangle,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { formatMoney } from "../services/dashboardService";
 import {
@@ -31,10 +33,14 @@ export default function Dashboard() {
   const [cantHoy, setCantHoy] = useState(0);
 
   useEffect(() => {
-    const cargarDashboard = async () => {
-      setLoading(true);
-      const fechaISO = hoyArg();
+    cargarDashboard();
+  }, []);
 
+  const cargarDashboard = async () => {
+    setLoading(true);
+    const fechaISO = hoyArg();
+
+    try {
       const [ventasData, ganancias, stock] = await Promise.all([
         fetchVentasHoy(fechaISO),
         fetchGanancias(
@@ -52,13 +58,26 @@ export default function Dashboard() {
       setGanHoy(ganancias.totalGanado ?? 0);
       setStockCritico(stock);
 
-      await fetchCaja(); // sincroniza caja y movimientos
+      await fetchCaja();
+    } catch (error) {
+      console.error("Error cargando dashboard:", error);
+    } finally {
       setLoading(false);
-    };
-    cargarDashboard();
-  }, []);
+    }
+  };
 
-  if (loading) return <p className="p-6">Cargando...</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">
+            Cargando dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Calcular egresos del día
   const totalEgresos = movimientos
@@ -77,109 +96,95 @@ export default function Dashboard() {
   const hayStockBajo = stockCritico.some((p) => p.stock <= p.stockMinimo);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
-      {/* HEADER */}
-      <BienvenidaDashboard fechaActual={fechaActual} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* HEADER CON BIENVENIDA */}
+        <BienvenidaDashboard fechaActual={fechaActual} />
 
-      {/* KPIs */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <KPI
-          title="Vendido hoy"
-          icon={<DollarSign />}
-          value={`$${formatMoney(totalHoy)}`}
-        />
-        <KPI
-          title="Ganancia neta"
-          icon={<TrendingUp />}
-          value={`$${formatMoney(gananciaNeta)}`}
-        />
-        <KPI
-          title="Ventas realizadas"
-          icon={<ShoppingCart />}
-          value={cantHoy}
-        />
-        <KPI
-          title="Stock crítico"
-          icon={<BarChart2 />}
-          value={stockCritico.length}
-        />
-      </section>
+        {/* BOTÓN ACTUALIZAR */}
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={cargarDashboard}
+          disabled={loading}
+          className="flex items-center gap-2 ml-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+          Actualizar
+        </motion.button>
 
-      {/* ALERTA */}
-      {hayStockBajo && (
-        <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-red-700 shadow-sm">
-          <AlertTriangle className="w-5 h-5" />
-          <span className="font-medium">
-            Atención: hay productos con stock crítico.
-          </span>
+        {/* KPI CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Vendido Hoy"
+            value={`$${formatMoney(totalHoy)}`}
+            subtitle={`${cantHoy} ventas realizadas`}
+            icon={DollarSign}
+            color="blue"
+          />
+          <MetricCard
+            title="Ganancia Neta"
+            value={`$${formatMoney(gananciaNeta)}`}
+            subtitle={`Egresos: $${formatMoney(totalEgresos)}`}
+            icon={TrendingUp}
+            color="green"
+          />
+          <MetricCard
+            title="Ventas Realizadas"
+            value={cantHoy}
+            subtitle="Transacciones del día"
+            icon={ShoppingCart}
+            color="purple"
+          />
+          <MetricCard
+            title="Stock Crítico"
+            value={stockCritico.length}
+            subtitle="Productos requieren atención"
+            icon={AlertTriangle}
+            color={stockCritico.length > 0 ? "red" : "green"}
+            badge={stockCritico.length > 0 ? "⚠️ Atención" : "✓ OK"}
+          />
         </div>
-      )}
 
-      {/* CONTENIDO PRINCIPAL */}
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-8">
-          <MovimientosTable data={movimientos} />
-          <StockCriticoCard productos={stockCritico} />
+        {/* ALERTA DE STOCK */}
+        {hayStockBajo && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 p-5 rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500 shadow-md"
+          >
+            <div className="p-2 rounded-full bg-red-100">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <p className="font-bold text-red-900">
+                ¡Atención! Stock crítico detectado
+              </p>
+              <p className="text-sm text-red-700">
+                Hay {stockCritico.length} productos que requieren reposición
+                inmediata
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* CONTENIDO PRINCIPAL - GRID 2 COLUMNAS */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* COLUMNA IZQUIERDA - 2/3 */}
+          <div className="xl:col-span-2 space-y-8">
+            <MovimientosCard movimientos={movimientos} />
+            <StockAlertCard productos={stockCritico} />
+          </div>
+
+          {/* COLUMNA DERECHA - 1/3 */}
+          <div className="space-y-8">
+            <CajaResumenCard resumen={resumen} />
+            <QuickActionsCard />
+          </div>
         </div>
-
-        <div className="space-y-8">
-          <ResumenCaja resumen={resumen} />
-          <AccesosRapidos />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function KPI({ title, icon, value }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm border border-slate-200"
-    >
-      <div className="flex items-center justify-between text-slate-500 text-sm">
-        <span>{title}</span>
-        <div className="text-slate-400">{icon}</div>
       </div>
-      <div className="mt-3 text-3xl font-bold text-slate-800">{value}</div>
-    </motion.div>
-  );
-}
-
-function CajaItem({ label, value, highlight }) {
-  return (
-    <div
-      className={`rounded-xl p-4 border ${
-        highlight
-          ? "bg-blue-50 border-blue-200 text-blue-700"
-          : "bg-slate-50 border-slate-200"
-      }`}
-    >
-      <p className="text-xs uppercase tracking-wide">{label}</p>
-      <p className="text-xl font-bold">${formatMoney(value)}</p>
     </div>
-  );
-}
-
-function ResumenCaja({ resumen }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-6 shadow-md border border-slate-200"
-    >
-      <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-        <Wallet className="w-5 h-5" /> Resumen de caja
-      </h2>
-
-      <div className="grid grid-cols-2 gap-4">
-        <CajaItem label="Efectivo" value={resumen?.efectivo} />
-        <CajaItem label="MercadoPago" value={resumen?.mp} />
-        <CajaItem label="Transferencia" value={resumen?.transferencia} />
-        <CajaItem label="Total" value={resumen?.total} highlight />
-      </div>
-    </motion.div>
   );
 }

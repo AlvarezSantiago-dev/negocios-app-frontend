@@ -1,9 +1,17 @@
 import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  UserPlus,
+  User,
+  Loader2,
+  LogIn,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 import Swal from "sweetalert2";
 
 export default function Register() {
@@ -33,7 +41,6 @@ export default function Register() {
 
       const data = await res.json();
 
-      // FIX 1: si res.ok es false => backend devolvió error
       if (!res.ok) {
         Swal.fire({
           icon: "error",
@@ -44,7 +51,6 @@ export default function Register() {
         return;
       }
 
-      // FIX 2: asegurar éxito
       Swal.fire({
         icon: "success",
         title: "Cuenta creada 🎉",
@@ -65,59 +71,84 @@ export default function Register() {
   };
 
   return (
-    <div className="h-screen w-full flex justify-center items-center bg-gradient-to-br from-blue-100 to-blue-300 p-4">
+    <div className="min-h-screen w-full flex justify-center items-center bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4">
+      {/* Decoración de fondo */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/2 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
       >
-        <Card className="w-[380px] shadow-xl backdrop-blur bg-white/70 border border-white/40 rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl font-bold text-gray-800">
-              Crear cuenta ✨
-            </CardTitle>
-            <p className="text-center text-gray-500 text-sm mt-1">
-              Registrate para continuar
-            </p>
-          </CardHeader>
+        {/* Card Principal */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
+          {/* Header con gradiente */}
+          <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-8 text-white text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4"
+            >
+              <UserPlus className="w-10 h-10" />
+            </motion.div>
+            <h1 className="text-3xl font-bold mb-2">Crear Cuenta ✨</h1>
+            <p className="text-purple-100">Regístrate para continuar</p>
+          </div>
 
-          <CardContent>
-            <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          {/* Formulario */}
+          <div className="p-8">
+            <form onSubmit={handleRegister} className="space-y-6">
+              {/* Nombre */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Nombre
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Nombre Completo
                 </label>
-                <Input
-                  type="text"
-                  placeholder="Tu nombre"
-                  name="nombre"
-                  value={form.nombre}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                />
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Tu nombre"
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    required
+                    className="pl-11 py-6 rounded-xl border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
               </div>
 
+              {/* Email */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Email
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Correo Electrónico
                 </label>
-                <Input
-                  type="email"
-                  placeholder="tuemail@ejemplo.com"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  required
-                  className="mt-1"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input
+                    type="email"
+                    placeholder="tuemail@ejemplo.com"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className="pl-11 py-6 rounded-xl border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                  />
+                </div>
               </div>
 
+              {/* Password */}
               <div>
-                <label className="text-sm font-medium text-gray-700">
-                  Password
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Contraseña
                 </label>
-                <div className="relative mt-1">
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     type={showPass ? "text" : "password"}
                     placeholder="••••••••"
@@ -125,33 +156,73 @@ export default function Register() {
                     value={form.password}
                     onChange={handleChange}
                     required
+                    className="pl-11 pr-11 py-6 rounded-xl border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600"
                     onClick={() => setShowPass(!showPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPass ? "Ocultar" : "Ver"}
+                    {showPass ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full mt-2" disabled={loading}>
-                {loading ? "Creando cuenta..." : "Registrarse"}
-              </Button>
+              {/* Botón Submit */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Creando cuenta...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5" />
+                    Registrarse
+                  </>
+                )}
+              </motion.button>
             </form>
 
-            <p className="text-sm text-center text-gray-600 mt-4">
-              ¿Ya tenés cuenta?{" "}
-              <button
-                className="text-blue-600 underline"
-                onClick={() => navigate("/login")}
-              >
-                Iniciar sesión
-              </button>
-            </p>
-          </CardContent>
-        </Card>
+            {/* Separador */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">
+                  ¿Ya tenés cuenta?
+                </span>
+              </div>
+            </div>
+
+            {/* Botón Iniciar Sesión */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/login")}
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-semibold rounded-xl shadow-md transition-all"
+            >
+              <LogIn className="w-5 h-5" />
+              Iniciar Sesión
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Sistema de Gestión de Negocios © 2026
+        </p>
       </motion.div>
     </div>
   );
