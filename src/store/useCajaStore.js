@@ -20,27 +20,27 @@ const useCajaStore = create((set, get) => ({
     try {
       const hoyISO = hoyArg(); // YYYY-MM-DD
 
-      // Resumen del día
-      const resResumen = await api.get(
-        `/caja/resumen?desde=${hoyISO}&hasta=${hoyISO}`
-      );
+      // Resumen del día (incluye ingresos/egresos y movimientos del día)
+      const resResumenDia = await api.get(`/caja/dia?fecha=${hoyISO}`);
+      const resumenDia = resResumenDia.data.response || {};
 
-      // Últimos 5 movimientos
-      const resMovimientos = await api.get("/caja/movimientos?limit=5");
-
-      // Hasta 100 movimientos
-      const resAllMovs = await api.get("/caja/movimientos?limit=100");
+      const movsDia = Array.isArray(resumenDia.movimientos)
+        ? [...resumenDia.movimientos].sort(
+            (a, b) => new Date(b.fecha) - new Date(a.fecha)
+          )
+        : [];
 
       // Ventas del día
       const resVentas = await api.get(
         `/ventas/informes/diarias?fecha=${hoyISO}`
       );
+      const ventasDia = resVentas.data.ventas ?? resVentas.data.response ?? {};
 
       set({
-        resumen: resResumen.data.response || {},
-        movimientos: resMovimientos.data.response || [],
-        allmovimientos: resAllMovs.data.response || [],
-        ventas: resVentas.data.response || [],
+        resumen: resumenDia,
+        movimientos: movsDia.slice(0, 5),
+        allmovimientos: movsDia,
+        ventas: ventasDia,
         loading: false,
       });
     } catch (err) {

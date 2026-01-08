@@ -439,12 +439,43 @@ export default function ProductoFormModal({
                     por talle/color.
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {variants.map((v, idx) => (
                       <div
                         key={v._id ?? idx}
-                        className="grid grid-cols-12 gap-2 items-center bg-white/70 p-3 rounded-lg border"
+                        className="grid grid-cols-12 gap-3 bg-white p-4 rounded-xl border-2 border-purple-200 shadow-sm"
                       >
+                        <div className="col-span-12 flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="shrink-0 text-xs font-semibold text-purple-700 bg-purple-100 border border-purple-200 px-2 py-0.5 rounded-full">
+                              Variante {idx + 1}
+                            </span>
+                            <span className="text-xs text-gray-600 truncate">
+                              {String(v?.talle || "").trim() ||
+                              String(v?.color || "").trim()
+                                ? `${String(v?.talle || "").trim()}${
+                                    String(v?.talle || "").trim() &&
+                                    String(v?.color || "").trim()
+                                      ? " / "
+                                      : ""
+                                  }${String(v?.color || "").trim()}`
+                                : "(sin talle/color)"}
+                            </span>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => removeVariant(idx)}
+                            className="shrink-0 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                            title="Eliminar variante"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="col-span-12 border-t border-purple-100" />
+
                         <Input
                           className="col-span-3"
                           placeholder="Talle (S/M/L)"
@@ -470,7 +501,7 @@ export default function ProductoFormModal({
                           }
                         />
                         <Input
-                          className="col-span-2"
+                          className="col-span-3"
                           type="number"
                           placeholder="Stock"
                           value={v.stock ?? 0}
@@ -478,17 +509,13 @@ export default function ProductoFormModal({
                             updateVariant(idx, "stock", Number(e.target.value))
                           }
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="col-span-1"
-                          onClick={() => removeVariant(idx)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
 
                         <div className="col-span-12">
-                          <Label className="text-xs text-gray-600">
+                          <div className="flex items-center justify-between gap-3 mb-1">
+                            <Label className="text-xs text-gray-600">
+                              Código de barras (para scanner)
+                            </Label>
+
                             <Button
                               type="button"
                               variant="outline"
@@ -503,13 +530,14 @@ export default function ProductoFormModal({
                               <Printer className="w-4 h-4 mr-2" />
                               Imprimir
                             </Button>
-                            Código de barras (para scanner)
-                            {!initialData?._id && (
-                              <div className="text-[11px] text-gray-600 mt-1">
-                                Guardá la prenda para poder imprimir etiquetas.
-                              </div>
-                            )}
-                          </Label>
+                          </div>
+
+                          {!initialData?._id && (
+                            <div className="text-[11px] text-gray-600 mb-2">
+                              Guardá la prenda para poder imprimir etiquetas.
+                            </div>
+                          )}
+
                           <div className="flex gap-2">
                             <Input
                               placeholder="Ej: PRD-... o EAN"
@@ -554,14 +582,20 @@ export default function ProductoFormModal({
                           <Label className="text-xs text-gray-600">
                             Precio venta (opcional)
                           </Label>
-                          <Input
-                            type="number"
-                            placeholder="Si lo dejás vacío usa el precio base"
-                            value={v.precioVenta ?? ""}
-                            onChange={(e) =>
-                              updateVariant(idx, "precioVenta", e.target.value)
-                            }
-                          />
+                          <div>
+                            <Input
+                              type="number"
+                              placeholder="Si lo dejás vacío usa el precio base"
+                              value={v.precioVenta ?? ""}
+                              onChange={(e) =>
+                                updateVariant(
+                                  idx,
+                                  "precioVenta",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

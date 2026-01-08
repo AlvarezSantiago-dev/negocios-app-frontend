@@ -30,6 +30,7 @@ export default function Dashboard() {
 
   const { resumen, movimientos, fetchCaja } = useCajaStore();
   const [ganHoy, setGanHoy] = useState(0);
+  const [feeTarjetaHoy, setFeeTarjetaHoy] = useState(0);
   const [stockCritico, setStockCritico] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ventasHoy, setVentasHoy] = useState([]);
@@ -59,7 +60,24 @@ export default function Dashboard() {
       setTotalHoy(ventasData.totalVendido);
       setCantHoy(ventasData.cantidadVentas);
 
-      setGanHoy(ganancias.totalGanado ?? 0);
+      const totalComision = Number(
+        ganancias.totalComisionTarjeta ??
+          (Array.isArray(ventasData.ventas)
+            ? ventasData.ventas.reduce(
+                (acc, v) => acc + Number(v?.tarjetaFeeMonto ?? 0),
+                0
+              )
+            : 0)
+      );
+
+      const totalGanadoNeto = Number(
+        ganancias.totalGanadoNeto ??
+          Number(ganancias.totalGanado ?? 0) -
+            (Number.isFinite(totalComision) ? totalComision : 0)
+      );
+
+      setFeeTarjetaHoy(Number.isFinite(totalComision) ? totalComision : 0);
+      setGanHoy(Number.isFinite(totalGanadoNeto) ? totalGanadoNeto : 0);
       setStockCritico(stock);
 
       await fetchCaja();
@@ -84,11 +102,9 @@ export default function Dashboard() {
   }
 
   // Calcular egresos del día
-  const totalEgresos = movimientos
-    .filter((m) => m.tipo === "egreso")
-    .reduce((acc, m) => acc + (m.monto ?? 0), 0);
+  const totalEgresos = Number(resumen?.egresos ?? 0);
 
-  // Ganancia neta = ganancia bruta - egresos
+  // Ganancia neta final = (margen - comisión tarjeta) - egresos
   const gananciaNeta = ganHoy - totalEgresos;
 
   const fechaActual = new Date().toLocaleDateString("es-AR", {
@@ -124,14 +140,16 @@ export default function Dashboard() {
           <MetricCard
             title="Vendido Hoy"
             value={`$${formatMoney(totalHoy)}`}
-            subtitle={`${cantHoy} ventas realizadas`}
+            subtitle={`${cantHoy} ventas · Bruto`}
             icon={DollarSign}
             color="blue"
           />
           <MetricCard
             title="Ganancia Neta"
             value={`$${formatMoney(gananciaNeta)}`}
-            subtitle={`Egresos: $${formatMoney(totalEgresos)}`}
+            subtitle={`Comisión: $${formatMoney(
+              feeTarjetaHoy
+            )} · Egresos: $${formatMoney(totalEgresos)}`}
             icon={TrendingUp}
             color="green"
           />

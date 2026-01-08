@@ -56,7 +56,10 @@ export default function Informes() {
       if (!fecha) continue;
 
       const totalVenta = Number(v?.totalVenta ?? v?.totalVendido ?? 0);
-      const ganancia = Number(v?.gananciaTotal ?? v?.ganancia ?? 0);
+      const gananciaBruta = Number(v?.gananciaTotal ?? v?.ganancia ?? 0);
+      const feeTarjeta = Number(v?.tarjetaFeeMonto ?? 0);
+      const ganancia =
+        gananciaBruta - (Number.isFinite(feeTarjeta) ? feeTarjeta : 0);
 
       const prev = map.get(fecha) ?? {
         fecha,
@@ -242,6 +245,24 @@ export default function Informes() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {(() => {
+            const feeDia = (diarias.ventas ?? []).reduce(
+              (acc, v) => acc + Number(v?.tarjetaFeeMonto ?? 0),
+              0
+            );
+            const gananciaNetaDia =
+              Number(diarias.gananciaTotal ?? 0) - Number(feeDia ?? 0);
+            const totalVendidoDia = Number(diarias.totalVendido ?? 0);
+            const margenPct = totalVendidoDia
+              ? ((gananciaNetaDia / totalVendidoDia) * 100).toFixed(1)
+              : "0.0";
+
+            // dejamos accesible para el JSX siguiente sin recalcular
+            diarias._feeTarjeta = feeDia;
+            diarias._gananciaNeta = gananciaNetaDia;
+            diarias._margenPct = margenPct;
+            return null;
+          })()}
           <StatCard
             title="Ventas del Día"
             value={`$${(diarias.totalVendido ?? 0).toLocaleString()}`}
@@ -251,21 +272,18 @@ export default function Informes() {
           />
           <StatCard
             title="Ganancia del Día"
-            value={`$${(diarias.gananciaTotal ?? 0).toLocaleString()}`}
-            subtitle={`Margen ${
-              diarias.totalVendido
-                ? (
-                    (diarias.gananciaTotal / diarias.totalVendido) *
-                    100
-                  ).toFixed(1)
-                : 0
-            }%`}
+            value={`$${Number(diarias._gananciaNeta ?? 0).toLocaleString()}`}
+            subtitle={`Neta (margen ${diarias._margenPct ?? "0.0"}%)`}
             icon={TrendingUp}
             color="green"
           />
           <StatCard
             title="Ganancia Mensual"
-            value={`$${(ganancias.totalGanado ?? 0).toLocaleString()}`}
+            value={`$${(
+              ganancias.totalGanadoNeto ??
+              Number(ganancias.totalGanado ?? 0) -
+                Number(ganancias.totalComisionTarjeta ?? 0)
+            ).toLocaleString()}`}
             subtitle={`${ganancias.totalProductos ?? 0} ${
               isApparel ? "variantes" : "productos"
             } vendidos`}
@@ -378,7 +396,11 @@ export default function Informes() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-purple-600">
-                        ${(venta.gananciaTotal ?? 0).toFixed(0)}
+                        $
+                        {(
+                          Number(venta.gananciaTotal ?? 0) -
+                          Number(venta.tarjetaFeeMonto ?? 0)
+                        ).toFixed(0)}
                       </td>
                     </>
                   )}

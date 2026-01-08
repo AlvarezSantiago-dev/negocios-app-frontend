@@ -66,10 +66,12 @@ function ActionButton({
 
 export default function Ventas() {
   const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
   const [products, setProducts] = useState([]);
   const [filtro, setFiltro] = useState("");
   const [carrito, setCarrito] = useState([]);
   const [metodoPago, setMetodoPago] = useState("efectivo");
+  const [tarjetaFeePct, setTarjetaFeePct] = useState(4.32);
 
   const [openModal, setOpenModal] = useState(false);
   const [initialProductData, setInitialProductData] = useState(null);
@@ -166,6 +168,15 @@ export default function Ventas() {
     return [talle, color].filter(Boolean).join(" / ") || "Variante";
   };
 
+  const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+
+  const applyDescuento = (precio, descuentoPct) => {
+    const p = Number(precio || 0);
+    const d = Number(descuentoPct || 0);
+    if (!Number.isFinite(p) || !Number.isFinite(d) || d <= 0) return p;
+    return Math.round(p * (1 - d / 100) * 100) / 100;
+  };
+
   const getProductoStockVisible = (p) => {
     const vars = Array.isArray(p?.variants) ? p.variants : null;
     if (vars && vars.length > 0) {
@@ -188,9 +199,11 @@ export default function Ventas() {
     if (variantId) {
       const v = (producto.variants || []).find((vv) => vv._id === variantId);
       const pv = v?.precioVenta;
-      return pv === undefined || pv === null || pv === ""
-        ? producto.precioVenta
-        : pv;
+      const base =
+        pv === undefined || pv === null || pv === ""
+          ? producto.precioVenta
+          : pv;
+      return Number(base || 0);
     }
     return producto.precioVenta;
   };
@@ -235,7 +248,7 @@ export default function Ventas() {
 
     // Si es ropa con variantes, el stock se gestiona por variantes
     const hasVariants =
-      businessType === "apparel" &&
+      isApparel &&
       Array.isArray(producto.variants) &&
       producto.variants.length > 0;
 
@@ -267,8 +280,10 @@ export default function Ventas() {
       const existente = carrito.find((i) => i.lineId === lineId);
 
       const stockVar = getStockDisponible(producto._id, variantId);
-      const precioUnitario = getPrecioUnitario(producto, variantId);
+      const precioBase = getPrecioUnitario(producto, variantId);
       const variantLabel = getVariantLabel(v0);
+      const descuentoPctAplicado = 0;
+      const precioUnitario = applyDescuento(precioBase, descuentoPctAplicado);
 
       if (matchedVariant && stockVar <= 0) {
         Swal.fire("Sin stock", "", "warning");
@@ -303,6 +318,7 @@ export default function Ventas() {
           productoId: producto._id,
           variantId,
           variantLabel,
+          descuentoPctAplicado,
           nombre: producto.nombre,
           cantidad: 1,
           tipoVenta: "unidad",
@@ -383,7 +399,11 @@ export default function Ventas() {
     }
 
     if (hasVar) {
-      const precioUnitario = getPrecioUnitario(producto, item.variantId);
+      const descuentoPctAplicado = Number(item.descuentoPctAplicado || 0);
+      const descuentoPctInput =
+        item.descuentoPctInput ?? String(descuentoPctAplicado || 0);
+      const precioBase = getPrecioUnitario(producto, item.variantId);
+      const precioUnitario = applyDescuento(precioBase, descuentoPctAplicado);
       setCarrito(
         carrito.map((i) =>
           i.lineId === item.lineId
@@ -392,6 +412,8 @@ export default function Ventas() {
                 cantidad: nuevaCantidad,
                 tipoVenta: "unidad",
                 precioUnitarioAplicado: precioUnitario,
+                descuentoPctAplicado,
+                descuentoPctInput,
               }
             : i
         )
@@ -431,7 +453,11 @@ export default function Ventas() {
       Swal.fire("Sin stock", "", "warning");
       return;
     }
-    const precioUnitario = getPrecioUnitario(producto, newVariantId);
+    const descuentoPctAplicado = Number(item.descuentoPctAplicado || 0);
+    const descuentoPctInput =
+      item.descuentoPctInput ?? String(descuentoPctAplicado || 0);
+    const precioBase = getPrecioUnitario(producto, newVariantId);
+    const precioUnitario = applyDescuento(precioBase, descuentoPctAplicado);
     const variantLabel = getVariantLabel(v);
 
     const nextLineId = `${item.productoId}:${newVariantId}`;
@@ -456,6 +482,8 @@ export default function Ventas() {
                   cantidad: nuevaCantidad,
                   precioUnitarioAplicado: precioUnitario,
                   variantLabel,
+                  descuentoPctAplicado,
+                  descuentoPctInput,
                 }
               : x
           )
@@ -473,12 +501,52 @@ export default function Ventas() {
               lineId: nextLineId,
               variantId: newVariantId,
               variantLabel,
+              descuentoPctAplicado,
+              descuentoPctInput,
               cantidad: clampedQty,
               precioUnitarioAplicado: precioUnitario,
               tipoVenta: "unidad",
             }
           : x
       )
+    );
+  };
+
+  const cambiarDescuentoLinea = (lineId, rawValue) => {
+    const id = String(lineId || "");
+    if (!id) return;
+
+    const nextInput =
+      rawValue === undefined || rawValue === null ? "" : String(rawValue);
+
+    setCarrito((prev) =>
+      prev.map((item) => {
+        if (String(item.lineId || "") !== id) return item;
+        if (!item.variantId) {
+          return { ...item, descuentoPctInput: nextInput };
+        }
+
+        const producto = products.find((p) => p._id === item.productoId);
+        if (!producto) {
+          return { ...item, descuentoPctInput: nextInput };
+        }
+
+        let pct = 0;
+        if (nextInput.trim() !== "") {
+          const parsed = Number(nextInput);
+          pct = Number.isFinite(parsed) ? clamp(parsed, 0, 100) : 0;
+        }
+
+        const precioBase = getPrecioUnitario(producto, item.variantId);
+        const precioUnitario = applyDescuento(precioBase, pct);
+
+        return {
+          ...item,
+          descuentoPctInput: nextInput,
+          descuentoPctAplicado: pct,
+          precioUnitarioAplicado: precioUnitario,
+        };
+      })
     );
   };
 
@@ -496,6 +564,16 @@ export default function Ventas() {
     0
   );
 
+  const tarjeta = (() => {
+    if (metodoPago !== "tarjeta_credito") return null;
+    const pct = Number.isFinite(Number(tarjetaFeePct))
+      ? clamp(Number(tarjetaFeePct), 0, 100)
+      : 4.32;
+    const fee = Math.round(total * (pct / 100) * 100) / 100;
+    const neto = Math.round((total - fee) * 100) / 100;
+    return { pct, fee, neto };
+  })();
+
   const registrarVenta = async () => {
     if (!carrito.length) {
       Swal.fire("Carrito vacío", "", "warning");
@@ -504,10 +582,16 @@ export default function Ventas() {
 
     const payload = {
       metodoPago,
+      ...(metodoPago === "tarjeta_credito"
+        ? { tarjetaFeePct: tarjeta?.pct ?? tarjetaFeePct }
+        : {}),
       items: carrito.map((i) => ({
         productoId: i.productoId,
         cantidad: i.cantidad,
         ...(i.variantId ? { variantId: i.variantId } : {}),
+        ...(i.variantId && Number(i.descuentoPctAplicado || 0) > 0
+          ? { descuentoPct: Number(i.descuentoPctAplicado || 0) }
+          : {}),
       })),
     };
 
@@ -623,6 +707,8 @@ export default function Ventas() {
       case "mp":
         return <Smartphone className="w-5 h-5" />;
       case "transferencia":
+        return <CreditCard className="w-5 h-5" />;
+      case "tarjeta_credito":
         return <CreditCard className="w-5 h-5" />;
       default:
         return <DollarSign className="w-5 h-5" />;
@@ -866,11 +952,13 @@ export default function Ventas() {
                           (p) => p._id === i.productoId
                         );
                         const canSelectVariant =
-                          businessType === "apparel" &&
+                          isApparel &&
                           Boolean(i.variantId) &&
                           Boolean(i.lineId) &&
                           Array.isArray(producto?.variants) &&
                           producto.variants.length > 0;
+
+                        const canDiscountLine = Boolean(i.variantId);
 
                         return (
                           <>
@@ -882,6 +970,12 @@ export default function Ventas() {
                                 {i.variantId && (
                                   <p className="text-sm text-gray-600">
                                     {i.variantLabel || "Variante"}
+                                    {Number(i.descuentoPctAplicado || 0) >
+                                      0 && (
+                                      <span className="ml-2 inline-block px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full">
+                                        -{Number(i.descuentoPctAplicado || 0)}%
+                                      </span>
+                                    )}
                                   </p>
                                 )}
                                 {i.tipoVenta === "pack" && (
@@ -910,6 +1004,31 @@ export default function Ventas() {
                                         ))}
                                       </SelectContent>
                                     </Select>
+                                  </div>
+                                )}
+
+                                {canDiscountLine && (
+                                  <div className="mt-2 flex items-center gap-2 max-w-xs">
+                                    <span className="text-xs text-gray-600">
+                                      Desc %
+                                    </span>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      max={100}
+                                      step={1}
+                                      value={
+                                        i.descuentoPctInput ??
+                                        String(i.descuentoPctAplicado ?? 0)
+                                      }
+                                      onChange={(e) =>
+                                        cambiarDescuentoLinea(
+                                          i.lineId,
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-20 h-9"
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -1016,9 +1135,55 @@ export default function Ventas() {
                         Transferencia
                       </div>
                     </SelectItem>
+
+                    {isApparel && (
+                      <SelectItem value="tarjeta_credito">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4" />
+                          Tarjeta (Crédito)
+                        </div>
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
+
+              {metodoPago === "tarjeta_credito" && (
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        Comisión / retención
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Se acredita a los 10 días en MP (pendiente)
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">%</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={tarjetaFeePct}
+                        onChange={(e) => setTarjetaFeePct(e.target.value)}
+                        className="w-28"
+                      />
+                    </div>
+                  </div>
+
+                  {tarjeta && (
+                    <div className="mt-3 text-sm text-gray-700 flex flex-wrap gap-4">
+                      <span>
+                        Comisión: <b>${formatMoney(tarjeta.fee)}</b>
+                      </span>
+                      <span>
+                        A acreditar: <b>${formatMoney(tarjeta.neto)}</b>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* TOTAL */}
               <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">

@@ -293,7 +293,11 @@ export default function CajaPage() {
           />
           <MetricCardCaja
             label="MercadoPago"
-            value={`$${formatMoney(resumen?.mp || 0)}`}
+            value={`$${formatMoney(resumen?.mp || 0)}${
+              Number(resumen?.mpPendiente || 0) > 0
+                ? ` ($${formatMoney(resumen?.mpPendiente || 0)} pendiente)`
+                : ""
+            }`}
             icon={Smartphone}
             color="purple"
             subtitle="Pagos digitales"

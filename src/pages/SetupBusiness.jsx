@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import api from "../services/api";
 import useAuthStore from "../store/authStore";
+import { Loader2 } from "lucide-react";
 
 export default function SetupBusiness() {
   const navigate = useNavigate();
@@ -64,50 +65,76 @@ export default function SetupBusiness() {
     }
   };
 
-  if (loading) return <div className="p-6">Cargando...</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">
+            Cargando configuración...
+          </p>
+        </div>
+      </div>
+    );
   if (configured) return null;
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border p-6">
-        <h1 className="text-2xl font-bold text-gray-900">Configurar negocio</h1>
-        <p className="text-gray-600 mt-2">
-          Esta elección se hace una sola vez (solo ADMIN).
-        </p>
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="p-6 sm:p-8 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Configurar negocio
+          </h1>
+          <p className="text-gray-700 mt-2">
+            Elegí el tipo de negocio. Esta acción se hace una sola vez (solo
+            ADMIN).
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <button
-            className="p-4 rounded-xl border bg-white hover:bg-gray-50 text-left"
-            onClick={() => choose("market")}
-            disabled={loading}
-          >
-            <div className="font-semibold text-gray-900">Mercado</div>
-            <div className="text-sm text-gray-600">
-              Productos + ventas + caja
-            </div>
-          </button>
+        <div className="p-6 sm:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              className="group text-left rounded-2xl border border-gray-200 bg-white hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              onClick={() => choose("market")}
+              disabled={loading}
+            >
+              <div className="h-1.5 bg-gradient-to-r from-blue-600 to-purple-600" />
+              <div className="p-5">
+                <div className="font-bold text-gray-900 text-lg">Mercado</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Productos + ventas + caja
+                </div>
+              </div>
+            </button>
 
-          <button
-            className="p-4 rounded-xl border bg-white hover:bg-gray-50 text-left"
-            onClick={() => choose("apparel")}
-            disabled={loading}
-          >
-            <div className="font-semibold text-gray-900">Ropa</div>
-            <div className="text-sm text-gray-600">
-              Talles/variantes (próximo)
-            </div>
-          </button>
+            <button
+              className="group text-left rounded-2xl border border-gray-200 bg-white hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              onClick={() => choose("apparel")}
+              disabled={loading}
+            >
+              <div className="h-1.5 bg-gradient-to-r from-blue-600 to-purple-600" />
+              <div className="p-5">
+                <div className="font-bold text-gray-900 text-lg">Ropa</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Talles / variantes
+                </div>
+              </div>
+            </button>
 
-          <button
-            className="p-4 rounded-xl border bg-white hover:bg-gray-50 text-left"
-            onClick={() => choose("recipe")}
-            disabled={loading}
-          >
-            <div className="font-semibold text-gray-900">Recetas</div>
-            <div className="text-sm text-gray-600">
-              Insumos y descuento automático
-            </div>
-          </button>
+            <button
+              className="group text-left rounded-2xl border border-gray-200 bg-white hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              onClick={() => choose("recipe")}
+              disabled={loading}
+            >
+              <div className="h-1.5 bg-gradient-to-r from-blue-600 to-purple-600" />
+              <div className="p-5">
+                <div className="font-bold text-gray-900 text-lg">Recetas</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  Insumos y descuentos
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     </div>

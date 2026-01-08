@@ -207,6 +207,7 @@ export default function VentaFormModal({ open, onClose, onSave, initialData }) {
                 <option value="efectivo">Efectivo</option>
                 <option value="mp">Mercado Pago</option>
                 <option value="transferencia">Transferencia</option>
+                <option value="tarjeta_credito">Tarjeta (Crédito)</option>
               </select>
             </div>
 

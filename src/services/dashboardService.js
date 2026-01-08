@@ -61,7 +61,13 @@ export async function fetchGanancias(year, month, day) {
     }`
   );
   return (
-    data.ganancias ?? { totalGanado: 0, totalVendido: 0, cantidadVentas: 0 }
+    data.ganancias ?? {
+      totalGanado: 0,
+      totalGanadoNeto: 0,
+      totalComisionTarjeta: 0,
+      totalVendido: 0,
+      cantidadVentas: 0,
+    }
   );
 }
 

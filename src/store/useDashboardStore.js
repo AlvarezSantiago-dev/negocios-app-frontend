@@ -34,7 +34,10 @@ const useDashboardStore = create((set, get) => ({
 
       set({
         ventasHoy: ventas,
-        ganHoy: ganancias.totalGanado ?? 0,
+        ganHoy:
+          ganancias.totalGanadoNeto ??
+          Number(ganancias.totalGanado ?? 0) -
+            Number(ganancias.totalComisionTarjeta ?? 0),
         stockCritico: critico,
         caja: resumenCaja,
         movimientos: movs,
@@ -73,7 +76,13 @@ const useDashboardStore = create((set, get) => ({
       const [year, month, day] = fechaISO.split("-").map(Number);
       const ventas = await fetchVentasHoy(fechaISO);
       const ganancias = await fetchGanancias(year, month, day);
-      set({ ventasHoy: ventas, ganHoy: ganancias.totalGanado ?? 0 });
+      set({
+        ventasHoy: ventas,
+        ganHoy:
+          ganancias.totalGanadoNeto ??
+          Number(ganancias.totalGanado ?? 0) -
+            Number(ganancias.totalComisionTarjeta ?? 0),
+      });
     } catch (err) {
       console.error("Error actualizarVentas:", err);
     }

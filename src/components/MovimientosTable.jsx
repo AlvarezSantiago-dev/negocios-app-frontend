@@ -7,6 +7,12 @@ export default function MovimientosTable({
   onDelete,
   cajaAbierta = false,
 }) {
+  const labelMetodo = (m) => {
+    const metodo = String(m?.metodo || "");
+    if (metodo === "mp_pendiente") return "mp (pendiente)";
+    return metodo;
+  };
+
   return (
     <div className="w-full overflow-x-auto">
       <table className="min-w-[900px] w-full text-sm border rounded-lg overflow-hidden">
@@ -30,7 +36,7 @@ export default function MovimientosTable({
                 <td className="p-3 capitalize">{m.tipo}</td>
                 <td className="p-3 font-medium">${m.monto}</td>
                 <td className="p-3">{m.motivo || "—"}</td>
-                <td className="p-3 capitalize">{m.metodo}</td>
+                <td className="p-3 capitalize">{labelMetodo(m)}</td>
 
                 <td className="p-3">
                   <div className="flex justify-end gap-2">

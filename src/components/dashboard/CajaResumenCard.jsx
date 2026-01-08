@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Wallet, CreditCard, Smartphone, DollarSign } from "lucide-react";
 
 export default function CajaResumenCard({ resumen }) {
+  const mpPendiente = Number(resumen?.mpPendiente || 0);
+
   const metodos = [
     {
       label: "Efectivo",
@@ -62,7 +64,16 @@ export default function CajaResumenCard({ resumen }) {
               >
                 <metodo.icon className="w-5 h-5 text-white" />
               </div>
-              <span className="font-medium text-gray-700">{metodo.label}</span>
+              <div className="flex flex-col">
+                <span className="font-medium text-gray-700">
+                  {metodo.label}
+                </span>
+                {metodo.label === "MercadoPago" && mpPendiente > 0 && (
+                  <span className="text-xs text-gray-500">
+                    Pendiente: ${mpPendiente.toLocaleString()}
+                  </span>
+                )}
+              </div>
             </div>
             <span className="text-lg font-bold text-gray-900">
               ${metodo.value.toLocaleString()}
