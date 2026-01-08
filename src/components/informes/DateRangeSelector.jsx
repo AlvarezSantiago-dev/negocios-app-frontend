@@ -11,42 +11,39 @@ export default function DateRangeSelector({ selectedDate, onDateChange }) {
   // Calcular ayer en timezone Argentina
   function getYesterday() {
     const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+    const argTime = new Date(utcTime + ARGENTINA_OFFSET * 60000);
     argTime.setUTCDate(argTime.getUTCDate() - 1);
-    
+
     const year = argTime.getUTCFullYear();
     const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
     const day = String(argTime.getUTCDate()).padStart(2, "0");
-    
+
     return `${year}-${month}-${day}`;
   }
 
   // Calcular hace 7 días en timezone Argentina
   function getLastWeek() {
     const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+    const argTime = new Date(utcTime + ARGENTINA_OFFSET * 60000);
     argTime.setUTCDate(argTime.getUTCDate() - 7);
-    
+
     const year = argTime.getUTCFullYear();
     const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
     const day = String(argTime.getUTCDate()).padStart(2, "0");
-    
+
     return `${year}-${month}-${day}`;
   }
 
   // Primer día del mes en timezone Argentina
   const firstDayOfMonth = (() => {
     const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
-    
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+    const argTime = new Date(utcTime + ARGENTINA_OFFSET * 60000);
+
     const year = argTime.getUTCFullYear();
     const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
-    
-    return `${year}-${month}-01`;
-  })();
 
     return `${year}-${month}-01`;
   })();
