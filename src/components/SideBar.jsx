@@ -14,9 +14,12 @@ import {
   History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import useAuthStore from "@/store/authStore";
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const [collapsed, setCollapsed] = useState(false);
+  const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
 
   const links = [
     {
@@ -33,7 +36,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
     },
     {
       to: "/productos",
-      label: "Productos",
+      label: isApparel ? "Prendas" : "Productos",
       icon: <Package size={20} />,
       color: "purple",
     },

@@ -131,17 +131,31 @@ export default function Productos() {
 
   // SCAN EN PANTALLA PRODUCTOS
   const onScan = (codigo) => {
+    const normalizeBarcodeInput = (value) => {
+      if (value === undefined || value === null) return "";
+      return String(value)
+        .trim()
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
+        .replace(/,/g, "-")
+        .replace(/\s+/g, "")
+        .toUpperCase();
+    };
+
+    const codigoNorm = normalizeBarcodeInput(codigo);
     const existente = products.find((p) => {
-      if (p.codigoBarras === codigo) return true;
+      const pCode = normalizeBarcodeInput(p.codigoBarras);
+      if (pCode && pCode === codigoNorm) return true;
       if (!Array.isArray(p.variants) || !p.variants.length) return false;
-      return p.variants.some((v) => v?.codigoBarras === codigo);
+      return p.variants.some(
+        (v) => normalizeBarcodeInput(v?.codigoBarras) === codigoNorm
+      );
     });
 
     if (existente) {
       setEditing(existente);
     } else {
       setEditing({
-        codigoBarras: codigo,
+        codigoBarras: codigoNorm,
         tipo: "unitario",
         categoria: "general",
       });

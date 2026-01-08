@@ -22,8 +22,12 @@ import {
   fetchStockCritico,
 } from "../services/dashboardService";
 import { hoyArg } from "../utils/fecha.js";
+import useAuthStore from "@/store/authStore";
 
 export default function Dashboard() {
+  const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
+
   const { resumen, movimientos, fetchCaja } = useCajaStore();
   const [ganHoy, setGanHoy] = useState(0);
   const [stockCritico, setStockCritico] = useState([]);
@@ -141,7 +145,11 @@ export default function Dashboard() {
           <MetricCard
             title="Stock Crítico"
             value={stockCritico.length}
-            subtitle="Productos requieren atención"
+            subtitle={
+              isApparel
+                ? "Prendas requieren atención"
+                : "Productos requieren atención"
+            }
             icon={AlertTriangle}
             color={stockCritico.length > 0 ? "red" : "green"}
             badge={stockCritico.length > 0 ? "⚠️ Atención" : "✓ OK"}
@@ -163,8 +171,8 @@ export default function Dashboard() {
                 ¡Atención! Stock crítico detectado
               </p>
               <p className="text-sm text-red-700">
-                Hay {stockCritico.length} productos que requieren reposición
-                inmediata
+                Hay {stockCritico.length} {isApparel ? "prendas" : "productos"}{" "}
+                que requieren reposición inmediata
               </p>
             </div>
           </motion.div>

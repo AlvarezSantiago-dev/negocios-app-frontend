@@ -98,18 +98,29 @@ export default function Ventas() {
   // ------------------------------------------------------
   // Integración del scanner
   // ------------------------------------------------------
+  const normalizeBarcodeInput = (value) => {
+    if (value === undefined || value === null) return "";
+    return String(value)
+      .trim()
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, "-")
+      .replace(/,/g, "-")
+      .replace(/\s+/g, "")
+      .toUpperCase();
+  };
+
   const onScan = async (codigo) => {
+    const codigoNorm = normalizeBarcodeInput(codigo);
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_API_URL}/products/barcode/${encodeURIComponent(
-          codigo
+          codigoNorm
         )}`
       );
       agregarAlCarrito(res.data.response);
     } catch {
       const result = await Swal.fire({
         title: "Producto no encontrado",
-        text: `Código: ${codigo}`,
+        text: `Código: ${codigoNorm}`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Crear producto",
@@ -126,7 +137,7 @@ export default function Ventas() {
                     talle: "",
                     color: "",
                     sku: "",
-                    codigoBarras: codigo,
+                    codigoBarras: codigoNorm,
                     stock: 0,
                     stockMinimo: 0,
                     precioVenta: "",
@@ -134,7 +145,7 @@ export default function Ventas() {
                 ],
               }
             : {
-                codigoBarras: codigo,
+                codigoBarras: codigoNorm,
                 tipo: "unitario",
                 categoria: "general",
               }
@@ -732,7 +743,15 @@ export default function Ventas() {
                         return `$${formatMoney(p.precioVenta)}`;
                       }
 
-                      const precios = (p.variants || []).map((v) => {
+                      const variants = Array.isArray(p.variants)
+                        ? p.variants
+                        : [];
+                      const conStock = variants.filter(
+                        (v) => Number(v?.stock || 0) > 0
+                      );
+                      const base = conStock.length ? conStock : variants;
+
+                      const precios = base.map((v) => {
                         const pv = v?.precioVenta;
                         const eff =
                           pv === undefined || pv === null || pv === ""
