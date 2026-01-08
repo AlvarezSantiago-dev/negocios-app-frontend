@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import useBarcodeScanner from "@/hooks/useBarcodeScanner";
 import { formatMoney } from "@/services/dashboardService";
+import useAuthStore from "@/store/authStore";
 
 // Componente de Estadística
 function StatCard({ label, value, icon: Icon, color, subtitle }) {
@@ -98,6 +99,11 @@ function ActionButton({
 }
 
 export default function Productos() {
+  const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
+  const nounSingular = isApparel ? "prenda" : "producto";
+  const nounPlural = isApparel ? "prendas" : "productos";
+
   const {
     products,
     fetchProducts,
@@ -125,7 +131,11 @@ export default function Productos() {
 
   // SCAN EN PANTALLA PRODUCTOS
   const onScan = (codigo) => {
-    const existente = products.find((p) => p.codigoBarras === codigo);
+    const existente = products.find((p) => {
+      if (p.codigoBarras === codigo) return true;
+      if (!Array.isArray(p.variants) || !p.variants.length) return false;
+      return p.variants.some((v) => v?.codigoBarras === codigo);
+    });
 
     if (existente) {
       setEditing(existente);
@@ -152,13 +162,13 @@ export default function Productos() {
       if (editing && editing._id) {
         await updateProduct(editing._id, data);
         toast({
-          title: "Producto actualizado",
+          title: isApparel ? "Prenda actualizada" : "Producto actualizado",
           description: `${data.nombre} fue modificado correctamente.`,
         });
       } else {
         await addProduct(data);
         toast({
-          title: "Producto creado",
+          title: isApparel ? "Prenda creada" : "Producto creado",
           description: `${data.nombre} fue agregado correctamente.`,
         });
       }
@@ -178,8 +188,8 @@ export default function Productos() {
     try {
       await removeProduct(id);
       toast({
-        title: "Producto eliminado",
-        description: "El producto fue eliminado.",
+        title: isApparel ? "Prenda eliminada" : "Producto eliminado",
+        description: `El ${nounSingular} fue eliminado.`,
       });
     } catch {
       toast({
@@ -197,15 +207,77 @@ export default function Productos() {
 
   // Calcular estadísticas
   const totalProductos = products.length;
-  const stockCritico = products.filter((p) => p.stock <= p.stockMinimo).length;
-  const valorInventario = products.reduce(
-    (acc, p) => acc + p.precioCompra * p.stock,
-    0
-  );
-  const gananciaPotencial = products.reduce(
-    (acc, p) => acc + (p.precioVenta - p.precioCompra) * p.stock,
-    0
-  );
+  const getStockVisible = (p) => {
+    if (Array.isArray(p?.variants) && p.variants.length) {
+      return p.variants.reduce((acc, v) => acc + Number(v?.stock || 0), 0);
+    }
+    return Number(p?.stock || 0);
+  };
+
+  const getStockMinimoVisible = (p) => {
+    if (Array.isArray(p?.variants) && p.variants.length) {
+      return p.variants.reduce(
+        (acc, v) => acc + Number(v?.stockMinimo || 0),
+        0
+      );
+    }
+    return Number(p?.stockMinimo || 0);
+  };
+
+  const stockCritico = products.filter(
+    (p) => getStockVisible(p) <= getStockMinimoVisible(p)
+  ).length;
+
+  const toNumOrUndefined = (x) => {
+    if (x === undefined || x === null || x === "") return undefined;
+    const n = Number(x);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const getEffectivePrice = (variant, field, baseValue) => {
+    const override = toNumOrUndefined(variant?.[field]);
+    return override === undefined ? Number(baseValue || 0) : override;
+  };
+
+  const valorInventario = products.reduce((acc, p) => {
+    const hasVariants = Array.isArray(p?.variants) && p.variants.length;
+
+    if (!hasVariants) {
+      const stock = Number(p?.stock || 0);
+      return acc + Number(p?.precioCompra || 0) * stock;
+    }
+
+    return (
+      acc +
+      p.variants.reduce((sub, v) => {
+        const stock = Number(v?.stock || 0);
+        const pc = getEffectivePrice(v, "precioCompra", p?.precioCompra);
+        return sub + pc * stock;
+      }, 0)
+    );
+  }, 0);
+
+  const gananciaPotencial = products.reduce((acc, p) => {
+    const hasVariants = Array.isArray(p?.variants) && p.variants.length;
+
+    if (!hasVariants) {
+      const stock = Number(p?.stock || 0);
+      return (
+        acc +
+        (Number(p?.precioVenta || 0) - Number(p?.precioCompra || 0)) * stock
+      );
+    }
+
+    return (
+      acc +
+      p.variants.reduce((sub, v) => {
+        const stock = Number(v?.stock || 0);
+        const pc = getEffectivePrice(v, "precioCompra", p?.precioCompra);
+        const pv = getEffectivePrice(v, "precioVenta", p?.precioVenta);
+        return sub + (pv - pc) * stock;
+      }, 0)
+    );
+  }, 0);
 
   if (loading && products.length === 0) {
     return (
@@ -213,7 +285,7 @@ export default function Productos() {
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-700">
-            Cargando productos...
+            Cargando {nounPlural}...
           </p>
         </div>
       </div>
@@ -231,10 +303,12 @@ export default function Productos() {
         >
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              📦 Gestión de Productos
+              📦 Gestión de {isApparel ? "Prendas" : "Productos"}
             </h1>
             <p className="text-gray-600">
-              Administra tu inventario y controla el stock
+              {isApparel
+                ? "Administra tu catálogo de prendas y controla el stock"
+                : "Administra tu inventario y controla el stock"}
             </p>
           </div>
 
@@ -254,7 +328,7 @@ export default function Productos() {
               icon={Plus}
               variant="primary"
             >
-              Nuevo Producto
+              {isApparel ? "Nueva Prenda" : "Nuevo Producto"}
             </ActionButton>
           </div>
         </motion.div>
@@ -274,7 +348,8 @@ export default function Productos() {
                 Escáner de Código de Barras Activo
               </p>
               <p className="text-sm text-gray-600">
-                Escanea un producto para editarlo o crear uno nuevo
+                Escanea {isApparel ? "una prenda" : "un producto"} para editarlo
+                o crear {isApparel ? "una nueva" : "uno nuevo"}
               </p>
             </div>
           </div>
@@ -283,7 +358,7 @@ export default function Productos() {
         {/* ESTADÍSTICAS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            label="Total Productos"
+            label={isApparel ? "Total Prendas" : "Total Productos"}
             value={totalProductos}
             icon={Package}
             color="blue"
@@ -321,7 +396,7 @@ export default function Productos() {
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <Input
-              placeholder="Buscar producto por nombre..."
+              placeholder={`Buscar ${nounSingular} por nombre...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-12 py-6 rounded-xl shadow-lg border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -329,8 +404,9 @@ export default function Productos() {
           </div>
           {search && (
             <p className="text-sm text-gray-600 mt-2">
-              {filtered.length} producto{filtered.length !== 1 ? "s" : ""}{" "}
-              encontrado{filtered.length !== 1 ? "s" : ""}
+              {filtered.length} {nounSingular}
+              {filtered.length !== 1 ? "s" : ""} encontrado
+              {filtered.length !== 1 ? "s" : ""}
             </p>
           )}
         </motion.div>
@@ -343,10 +419,11 @@ export default function Productos() {
         >
           <div className="p-6 border-b border-gray-100">
             <h3 className="text-xl font-bold text-gray-900">
-              📋 Lista de Productos
+              📋 Lista de {isApparel ? "Prendas" : "Productos"}
             </h3>
             <p className="text-sm text-gray-600 mt-1">
-              {filtered.length} producto{filtered.length !== 1 ? "s" : ""}{" "}
+              {filtered.length} {nounSingular}
+              {filtered.length !== 1 ? "s" : ""}{" "}
               {search ? "filtrado" : "registrado"}
               {filtered.length !== 1 ? "s" : ""}
             </p>
@@ -355,6 +432,8 @@ export default function Productos() {
             <ProductosTable
               products={filtered}
               loading={loading}
+              nounSingular={nounSingular}
+              nounPlural={nounPlural}
               onEdit={(p) => {
                 setEditing(p);
                 setOpenModal(true);

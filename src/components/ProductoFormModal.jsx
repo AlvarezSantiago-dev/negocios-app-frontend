@@ -2,6 +2,7 @@
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 import {
   Dialog,
@@ -40,6 +41,7 @@ import {
 import { motion } from "framer-motion";
 import MoneyInput from "@/components/MoneyInput";
 import { formatMoney } from "@/services/money";
+import useAuthStore from "@/store/authStore";
 
 /* ---------- Tooltip ---------- */
 function Tooltip({ text }) {
@@ -78,6 +80,9 @@ export default function ProductoFormModal({
   initialData,
   onPrint,
 }) {
+  const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
+
   const { register, handleSubmit, reset, watch, setValue } = useForm({
     defaultValues: {
       nombre: "",
@@ -94,6 +99,35 @@ export default function ProductoFormModal({
   });
 
   const [packs, setPacks] = useState([]);
+  const [variants, setVariants] = useState([]);
+
+  const hasVariants = isApparel && variants.length > 0;
+
+  const getVariantLabel = (v) => {
+    const talle = String(v?.talle || "").trim();
+    const color = String(v?.color || "").trim();
+    return [talle, color].filter(Boolean).join(" / ") || "Variante";
+  };
+
+  const buildPrintProductForVariant = (v) => {
+    const variantPrice =
+      v?.precioVenta === undefined ||
+      v?.precioVenta === null ||
+      v?.precioVenta === ""
+        ? undefined
+        : Number(v.precioVenta);
+
+    return {
+      ...(initialData ?? {}),
+      codigoBarras: String(v?.codigoBarras || "").trim(),
+      nombre: `${String(initialData?.nombre || "Producto")} - ${getVariantLabel(
+        v
+      )}`,
+      precioVenta: Number.isFinite(variantPrice)
+        ? variantPrice
+        : Number(initialData?.precioVenta || 0),
+    };
+  };
 
   /* ---------- Watch ---------- */
   const tipo = watch("tipo");
@@ -122,7 +156,47 @@ export default function ProductoFormModal({
     });
 
     setPacks(initialData?.packs ?? []);
-  }, [open, initialData, reset]);
+
+    const incomingVariants = initialData?.variants ?? [];
+    if (isApparel) {
+      setValue("categoria", "general", { shouldDirty: true });
+      setVariants(
+        Array.isArray(incomingVariants) && incomingVariants.length > 0
+          ? incomingVariants
+          : [
+              {
+                talle: "",
+                color: "",
+                sku: "",
+                codigoBarras: initialData?.codigoBarras ?? "",
+                stock: 0,
+                stockMinimo: 0,
+                precioVenta: "",
+              },
+            ]
+      );
+    } else {
+      setVariants(incomingVariants);
+    }
+
+    if (isApparel) {
+      setValue("tipo", "unitario", { shouldDirty: true });
+    }
+  }, [open, initialData, reset, isApparel, setValue]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!isApparel) return;
+
+    const stockTotal = Array.isArray(variants)
+      ? variants.reduce((acc, v) => acc + Number(v?.stock || 0), 0)
+      : 0;
+
+    // si hay variantes, el stock se gestiona por variantes (stock base = suma)
+    if (variants.length > 0) {
+      setValue("stock", stockTotal, { shouldDirty: true });
+    }
+  }, [variants, isApparel, open, setValue]);
 
   /* ---------- Packs ---------- */
   const addPack = () =>
@@ -136,20 +210,92 @@ export default function ProductoFormModal({
 
   const removePack = (i) => setPacks(packs.filter((_, index) => index !== i));
 
+  /* ---------- Variants (ropa) ---------- */
+  const addVariant = () =>
+    setVariants([
+      ...variants,
+      {
+        talle: "",
+        color: "",
+        sku: "",
+        codigoBarras: "",
+        stock: 0,
+        stockMinimo: 0,
+        precioVenta: "",
+      },
+    ]);
+
+  const updateVariant = (i, field, value) => {
+    const updated = [...variants];
+    updated[i] = { ...updated[i], [field]: value };
+    setVariants(updated);
+  };
+
+  const removeVariant = (i) =>
+    setVariants(variants.filter((_, index) => index !== i));
+
   /* ---------- Submit ---------- */
   const handleCleanSubmit = (data) => {
+    const variantsClean = variants
+      .filter(
+        (v) => String(v.talle || "").trim() || String(v.color || "").trim()
+      )
+      .map((v) => ({
+        ...(v._id ? { _id: v._id } : {}),
+        talle: String(v.talle ?? "").trim(),
+        color: String(v.color ?? "").trim(),
+        sku: String(v.sku ?? "").trim(),
+        codigoBarras: String(v.codigoBarras ?? "").trim(),
+        stock: Number(v.stock ?? 0),
+        stockMinimo: Number(v.stockMinimo ?? 0),
+        precioVenta:
+          v.precioVenta === "" ||
+          v.precioVenta === null ||
+          v.precioVenta === undefined
+            ? undefined
+            : Number(v.precioVenta),
+      }));
+
+    if (isApparel && variantsClean.length === 0) {
+      Swal.fire(
+        "Faltan variantes",
+        "En Ropa necesitás cargar al menos un talle o color.",
+        "warning"
+      );
+      return;
+    }
+
+    const stockTotalFromVariants = variantsClean.reduce(
+      (acc, v) => acc + Number(v?.stock || 0),
+      0
+    );
+
     onSubmit({
       ...data,
+      tipo: isApparel ? "unitario" : data.tipo,
       precioCompra: Number(data.precioCompra || 0),
       precioVenta: Number(data.precioVenta || 0),
-      stock: Number(data.stock || 0),
-      stockMinimo: Number(data.stockMinimo || 0),
-      packs: packs
-        .filter((p) => Number(p.unidades) > 0 && Number(p.precioVentaPack) > 0)
-        .map((p) => ({
-          unidades: Number(p.unidades),
-          precioVentaPack: Number(p.precioVentaPack),
-        })),
+      stock:
+        isApparel && variantsClean.length > 0
+          ? stockTotalFromVariants
+          : Number(data.stock || 0),
+      stockMinimo:
+        isApparel && variantsClean.length > 0
+          ? 0
+          : Number(data.stockMinimo || 0),
+      packs: isApparel
+        ? []
+        : packs
+            .filter(
+              (p) => Number(p.unidades) > 0 && Number(p.precioVentaPack) > 0
+            )
+            .map((p) => ({
+              unidades: Number(p.unidades),
+              precioVentaPack: Number(p.precioVentaPack),
+            })),
+
+      // Solo se usa en negocio ropa (apparel). En otros tipos queda vacío.
+      variants: businessType === "apparel" ? variantsClean : [],
     });
   };
 
@@ -161,6 +307,13 @@ export default function ProductoFormModal({
     setValue("codigoBarras", res.data.codigoBarras, { shouldDirty: true });
   };
 
+  const generarCodigoVariante = async (idx) => {
+    const res = await axios.post(
+      `${import.meta.env.VITE_API_URL}/products/generate-barcode`
+    );
+    updateVariant(idx, "codigoBarras", res.data.codigoBarras);
+  };
+
   /* ---------- Render ---------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -170,38 +323,50 @@ export default function ProductoFormModal({
             <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
               <Package className="w-6 h-6 text-white" />
             </div>
-            {initialData ? "Editar Producto" : "Nuevo Producto"}
+            {isApparel
+              ? initialData
+                ? "Editar Prenda"
+                : "Nueva Prenda"
+              : initialData
+              ? "Editar Producto"
+              : "Nuevo Producto"}
           </DialogTitle>
         </DialogHeader>
 
         <form
           onSubmit={handleSubmit(handleCleanSubmit)}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6"
+          className={
+            isApparel
+              ? "grid grid-cols-1 gap-6 pt-6"
+              : "grid grid-cols-1 md:grid-cols-2 gap-6 pt-6"
+          }
         >
           {/* ---------- IZQUIERDA ---------- */}
           <div className="space-y-4">
-            {/* Código barras */}
-            <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
-              <Label className="flex items-center gap-2 text-base font-semibold">
-                <Barcode className="w-5 h-5 text-blue-600" />
-                Código de barras
-                <Tooltip text="Podés ingresarlo manualmente o generarlo automáticamente." />
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  {...register("codigoBarras")}
-                  className="bg-white border-blue-300 focus:border-blue-500"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={generarCodigo}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Generar
-                </Button>
+            {/* Código barras (solo market/otros) */}
+            {!isApparel && (
+              <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
+                <Label className="flex items-center gap-2 text-base font-semibold">
+                  <Barcode className="w-5 h-5 text-blue-600" />
+                  Código de barras
+                  <Tooltip text="Podés ingresarlo manualmente o generarlo automáticamente." />
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    {...register("codigoBarras")}
+                    className="bg-white border-blue-300 focus:border-blue-500"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={generarCodigo}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Generar
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Nombre */}
             <div className="space-y-2">
@@ -215,24 +380,195 @@ export default function ProductoFormModal({
               />
             </div>
 
-            {/* Tipo */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 font-semibold">
-                <Package className="w-4 h-4 text-green-600" />
-                Tipo de producto
-                <Tooltip text="Unitario: se vende por unidad. Peso: se vende por kilos/gramos desde balanza." />
-              </Label>
+            {/* Tipo (ropa fuerza unitario) */}
+            {!isApparel ? (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 font-semibold">
+                  <Package className="w-4 h-4 text-green-600" />
+                  Tipo de producto
+                  <Tooltip text="Unitario: se vende por unidad. Peso: se vende por kilos/gramos desde balanza." />
+                </Label>
 
-              <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
-                <SelectTrigger className="border-gray-300 focus:border-green-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unitario">📦 Unitario</SelectItem>
-                  <SelectItem value="peso">⚖️ Por peso</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <Select value={tipo} onValueChange={(v) => setValue("tipo", v)}>
+                  <SelectTrigger className="border-gray-300 focus:border-green-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unitario">📦 Unitario</SelectItem>
+                    <SelectItem value="peso">⚖️ Por peso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 font-semibold">
+                  <Package className="w-4 h-4 text-green-600" />
+                  Tipo de producto
+                </Label>
+                <div className="text-sm text-gray-600">
+                  Ropa: se vende por unidad. Stock y código por talle/color.
+                </div>
+              </div>
+            )}
+
+            {/* Variantes (solo ropa) */}
+            {businessType === "apparel" && (
+              <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">
+                    Variantes (talle / color)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={addVariant}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar
+                  </Button>
+                </div>
+
+                <div className="text-xs text-gray-600">
+                  Tip: si querés vender con scanner, asigná un código a cada
+                  variante.
+                </div>
+
+                {variants.length === 0 ? (
+                  <div className="text-sm text-gray-600">
+                    Sin variantes. Si agregás variantes, el stock se gestiona
+                    por talle/color.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {variants.map((v, idx) => (
+                      <div
+                        key={v._id ?? idx}
+                        className="grid grid-cols-12 gap-2 items-center bg-white/70 p-3 rounded-lg border"
+                      >
+                        <Input
+                          className="col-span-3"
+                          placeholder="Talle (S/M/L)"
+                          value={v.talle ?? ""}
+                          onChange={(e) =>
+                            updateVariant(idx, "talle", e.target.value)
+                          }
+                        />
+                        <Input
+                          className="col-span-3"
+                          placeholder="Color"
+                          value={v.color ?? ""}
+                          onChange={(e) =>
+                            updateVariant(idx, "color", e.target.value)
+                          }
+                        />
+                        <Input
+                          className="col-span-3"
+                          placeholder="SKU (opcional)"
+                          value={v.sku ?? ""}
+                          onChange={(e) =>
+                            updateVariant(idx, "sku", e.target.value)
+                          }
+                        />
+                        <Input
+                          className="col-span-2"
+                          type="number"
+                          placeholder="Stock"
+                          value={v.stock ?? 0}
+                          onChange={(e) =>
+                            updateVariant(idx, "stock", Number(e.target.value))
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="col-span-1"
+                          onClick={() => removeVariant(idx)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+
+                        <div className="col-span-12">
+                          <Label className="text-xs text-gray-600">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={
+                                !initialData?._id ||
+                                !String(v?.codigoBarras || "").trim()
+                              }
+                              onClick={() =>
+                                onPrint(buildPrintProductForVariant(v))
+                              }
+                            >
+                              <Printer className="w-4 h-4 mr-2" />
+                              Imprimir
+                            </Button>
+                            Código de barras (para scanner)
+                            {!initialData?._id && (
+                              <div className="text-[11px] text-gray-600 mt-1">
+                                Guardá la prenda para poder imprimir etiquetas.
+                              </div>
+                            )}
+                          </Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Ej: PRD-... o EAN"
+                              value={v.codigoBarras ?? ""}
+                              onChange={(e) =>
+                                updateVariant(
+                                  idx,
+                                  "codigoBarras",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() => generarCodigoVariante(idx)}
+                            >
+                              Generar
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="col-span-6">
+                          <Label className="text-xs text-gray-600">
+                            Stock mínimo
+                          </Label>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={v.stockMinimo ?? 0}
+                            onChange={(e) =>
+                              updateVariant(
+                                idx,
+                                "stockMinimo",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="col-span-6">
+                          <Label className="text-xs text-gray-600">
+                            Precio venta (opcional)
+                          </Label>
+                          <Input
+                            type="number"
+                            placeholder="Si lo dejás vacío usa el precio base"
+                            value={v.precioVenta ?? ""}
+                            onChange={(e) =>
+                              updateVariant(idx, "precioVenta", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Precio compra */}
             <div className="space-y-2 p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200">
@@ -275,186 +611,195 @@ export default function ProductoFormModal({
               </motion.div>
             )}
 
-            {/* Categoría */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 font-semibold">
-                <Archive className="w-4 h-4 text-blue-600" />
-                Categoría
-              </Label>
-              <Select
-                value={categoria}
-                onValueChange={(v) => setValue("categoria", v)}
-              >
-                <SelectTrigger className="border-gray-300 focus:border-blue-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">📋 General</SelectItem>
-                  <SelectItem value="bebidas">🥤 Bebidas</SelectItem>
-                  <SelectItem value="comida">🍔 Comida</SelectItem>
-                  <SelectItem value="limpieza">🧹 Limpieza</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Categoría (no aplica en ropa) */}
+            {!isApparel && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 font-semibold">
+                  <Archive className="w-4 h-4 text-blue-600" />
+                  Categoría
+                </Label>
+                <Select
+                  value={categoria}
+                  onValueChange={(v) => setValue("categoria", v)}
+                >
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">📋 General</SelectItem>
+                    <SelectItem value="bebidas">🥤 Bebidas</SelectItem>
+                    <SelectItem value="comida">🍔 Comida</SelectItem>
+                    <SelectItem value="limpieza">🧹 Limpieza</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           {/* ---------- DERECHA ---------- */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
-              <Package className="w-5 h-5 text-purple-600" />
-              <h3 className="font-bold text-lg">Packs (opcional)</h3>
-              <Tooltip text="Precio especial por cantidad. El sistema avisa si es menos rentable." />
-            </div>
+          {!isApparel && (
+            <div className="space-y-4">
+              {!isApparel && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
+                  <Package className="w-5 h-5 text-purple-600" />
+                  <h3 className="font-bold text-lg">Packs (opcional)</h3>
+                  <Tooltip text="Precio especial por cantidad. El sistema avisa si es menos rentable." />
+                </div>
+              )}
 
-            {packs.map((pack, i) => {
-              const unidades = Number(pack.unidades || 0);
-              const precioPack = Number(pack.precioVentaPack || 0);
+              {!isApparel &&
+                packs.map((pack, i) => {
+                  const unidades = Number(pack.unidades || 0);
+                  const precioPack = Number(pack.precioVentaPack || 0);
 
-              const gananciaPack =
-                unidades > 0 && precioPack > 0
-                  ? precioPack - precioCompra * unidades
-                  : 0;
+                  const gananciaPack =
+                    unidades > 0 && precioPack > 0
+                      ? precioPack - precioCompra * unidades
+                      : 0;
 
-              const gananciaNormal = gananciaUnitaria * unidades;
-              const menosRentable =
-                gananciaPack > 0 && gananciaPack < gananciaNormal;
+                  const gananciaNormal = gananciaUnitaria * unidades;
+                  const menosRentable =
+                    gananciaPack > 0 && gananciaPack < gananciaNormal;
 
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={`grid grid-cols-3 gap-2 items-center p-3 rounded-xl border-2 ${
-                    menosRentable
-                      ? "border-red-400 bg-gradient-to-br from-red-50 to-pink-50"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <div>
-                    <Label className="text-xs font-semibold flex items-center gap-1">
-                      <Package className="w-3 h-3" />
-                      Unidades
-                    </Label>
-                    <Input
-                      type="number"
-                      value={pack.unidades}
-                      onChange={(e) =>
-                        updatePack(i, "unidades", e.target.value)
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-semibold flex items-center gap-1">
-                      <DollarSign className="w-3 h-3" />
-                      Precio pack
-                    </Label>
-                    <MoneyInput
-                      value={pack.precioVentaPack}
-                      onChange={(v) => updatePack(i, "precioVentaPack", v)}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => removePack(i)}
-                    className="mt-5 hover:bg-red-100 hover:text-red-600"
-                  >
-                    <X size={18} />
-                  </Button>
-
-                  {gananciaPack > 0 && (
-                    <div className="col-span-3 mt-2 p-2 rounded-lg bg-white border">
-                      <div className="flex items-center gap-2 text-xs">
-                        <TrendingUp className="w-4 h-4 text-green-600" />
-                        <span className="text-green-700 font-semibold">
-                          Ganancia pack: ${formatMoney(gananciaPack)}
-                        </span>
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className={`grid grid-cols-3 gap-2 items-center p-3 rounded-xl border-2 ${
+                        menosRentable
+                          ? "border-red-400 bg-gradient-to-br from-red-50 to-pink-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <div>
+                        <Label className="text-xs font-semibold flex items-center gap-1">
+                          <Package className="w-3 h-3" />
+                          Unidades
+                        </Label>
+                        <Input
+                          type="number"
+                          value={pack.unidades}
+                          onChange={(e) =>
+                            updatePack(i, "unidades", e.target.value)
+                          }
+                          className="mt-1"
+                        />
                       </div>
 
-                      {menosRentable && (
-                        <div className="flex items-center gap-2 text-xs text-red-600 mt-1">
-                          <AlertTriangle className="w-4 h-4" />
-                          Menos rentable que vender suelto ($
-                          {formatMoney(gananciaNormal)})
+                      <div>
+                        <Label className="text-xs font-semibold flex items-center gap-1">
+                          <DollarSign className="w-3 h-3" />
+                          Precio pack
+                        </Label>
+                        <MoneyInput
+                          value={pack.precioVentaPack}
+                          onChange={(v) => updatePack(i, "precioVentaPack", v)}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => removePack(i)}
+                        className="mt-5 hover:bg-red-100 hover:text-red-600"
+                      >
+                        <X size={18} />
+                      </Button>
+
+                      {gananciaPack > 0 && (
+                        <div className="col-span-3 mt-2 p-2 rounded-lg bg-white border">
+                          <div className="flex items-center gap-2 text-xs">
+                            <TrendingUp className="w-4 h-4 text-green-600" />
+                            <span className="text-green-700 font-semibold">
+                              Ganancia pack: ${formatMoney(gananciaPack)}
+                            </span>
+                          </div>
+
+                          {menosRentable && (
+                            <div className="flex items-center gap-2 text-xs text-red-600 mt-1">
+                              <AlertTriangle className="w-4 h-4" />
+                              Menos rentable que vender suelto ($
+                              {formatMoney(gananciaNormal)})
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                    </motion.div>
+                  );
+                })}
 
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addPack}
-              className="w-full border-purple-300 hover:bg-purple-50 text-purple-700 font-semibold"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar pack
-            </Button>
+              {!isApparel && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addPack}
+                  className="w-full border-purple-300 hover:bg-purple-50 text-purple-700 font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar pack
+                </Button>
+              )}
 
-            {/* Stock */}
-            <div className="grid grid-cols-2 gap-3 pt-4">
-              <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
+              {/* Stock */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200">
+                  <Label className="flex items-center gap-2 font-semibold">
+                    <Archive className="w-4 h-4 text-blue-600" />
+                    Stock
+                  </Label>
+                  <Input
+                    type="number"
+                    {...register("stock")}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200">
+                  <Label className="flex items-center gap-2 font-semibold">
+                    <AlertTriangle className="w-4 h-4 text-orange-600" />
+                    Stock mínimo
+                  </Label>
+                  <Input
+                    type="number"
+                    {...register("stockMinimo")}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Foto */}
+              <div className="space-y-2">
                 <Label className="flex items-center gap-2 font-semibold">
-                  <Archive className="w-4 h-4 text-blue-600" />
-                  Stock
+                  <Image className="w-4 h-4 text-purple-600" />
+                  Foto (URL)
                 </Label>
                 <Input
-                  type="number"
-                  {...register("stock")}
-                  className="bg-white"
+                  {...register("foto")}
+                  placeholder="https://..."
+                  className="border-gray-300 focus:border-purple-500"
                 />
               </div>
-              <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200">
+
+              {/* Descripción */}
+              <div className="space-y-2">
                 <Label className="flex items-center gap-2 font-semibold">
-                  <AlertTriangle className="w-4 h-4 text-orange-600" />
-                  Stock mínimo
+                  <FileText className="w-4 h-4 text-gray-600" />
+                  Descripción
                 </Label>
-                <Input
-                  type="number"
-                  {...register("stockMinimo")}
-                  className="bg-white"
+                <Textarea
+                  rows={3}
+                  {...register("descripcion")}
+                  placeholder="Detalles adicionales del producto..."
+                  className="border-gray-300 focus:border-gray-500 resize-none"
                 />
               </div>
             </div>
-
-            {/* Foto */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 font-semibold">
-                <Image className="w-4 h-4 text-purple-600" />
-                Foto (URL)
-              </Label>
-              <Input
-                {...register("foto")}
-                placeholder="https://..."
-                className="border-gray-300 focus:border-purple-500"
-              />
-            </div>
-
-            {/* Descripción */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 font-semibold">
-                <FileText className="w-4 h-4 text-gray-600" />
-                Descripción
-              </Label>
-              <Textarea
-                rows={3}
-                {...register("descripcion")}
-                placeholder="Detalles adicionales del producto..."
-                className="border-gray-300 focus:border-gray-500 resize-none"
-              />
-            </div>
-          </div>
+          )}
 
           {/* ---------- FOOTER ---------- */}
           <DialogFooter className="col-span-full border-t pt-4 flex flex-wrap gap-3">
-            {initialData?._id && initialData?.codigoBarras && (
+            {!isApparel && initialData?._id && initialData?.codigoBarras && (
               <Button
                 type="button"
                 variant="outline"
@@ -481,7 +826,13 @@ export default function ProductoFormModal({
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
             >
               <Package className="w-4 h-4 mr-2" />
-              {initialData ? "Guardar cambios" : "Crear producto"}
+              {isApparel
+                ? initialData
+                  ? "Guardar prenda"
+                  : "Crear prenda"
+                : initialData
+                ? "Guardar cambios"
+                : "Crear producto"}
             </Button>
           </DialogFooter>
         </form>

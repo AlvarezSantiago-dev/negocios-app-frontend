@@ -93,7 +93,7 @@ export default function Dashboard() {
     month: "long",
   });
 
-  const hayStockBajo = stockCritico.some((p) => p.stock <= p.stockMinimo);
+  const hayStockBajo = stockCritico.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 p-4 sm:p-6 lg:p-8">

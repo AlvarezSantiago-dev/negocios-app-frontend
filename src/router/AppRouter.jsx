@@ -7,6 +7,7 @@ import Informes from "../pages/Informes";
 import Login from "../pages/Login";
 import Productos from "../pages/Products";
 import Register from "../pages/Register";
+import SetupBusiness from "../pages/SetupBusiness";
 import Ventas from "../pages/Ventas";
 import useAuthStore from "../store/authStore";
 import TestScanner from "../components/TestScanner";
@@ -25,6 +26,7 @@ export default function AppRouter() {
         path="/"
         element={isAuth ? <DashboardLayout /> : <Navigate to="/login" />}
       >
+        <Route path="setup" element={<SetupBusiness />} />
         <Route index element={<Dashboard />} />
         <Route path="ventas" element={<Ventas />} />
         <Route path="productos" element={<Productos />} />

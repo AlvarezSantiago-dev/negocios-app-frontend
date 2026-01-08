@@ -83,10 +83,38 @@ export async function fetchStockCritico() {
     const data = await res.json();
     const productos = data.response ?? [];
 
-    const criticos = productos.filter(
+    const normalizados = productos.map((p) => {
+      const hasVariants = Array.isArray(p?.variants) && p.variants.length;
+      if (!hasVariants) {
+        return {
+          ...p,
+          stock: Number(p?.stock || 0),
+          stockMinimo: Number(p?.stockMinimo || 0),
+        };
+      }
+
+      const stockVisible = p.variants.reduce(
+        (acc, v) => acc + Number(v?.stock || 0),
+        0
+      );
+
+      const stockMinimoVisible = p.variants.reduce(
+        (acc, v) => acc + Number(v?.stockMinimo || 0),
+        0
+      );
+
+      return {
+        ...p,
+        stock: stockVisible,
+        stockMinimo: stockMinimoVisible,
+      };
+    });
+
+    const criticos = normalizados.filter(
       (p) => Number(p.stock) <= Number(p.stockMinimo)
     );
-    criticos.sort((a, b) => a.stock - b.stock);
+
+    criticos.sort((a, b) => Number(a.stock) - Number(b.stock));
     return criticos;
   } catch (err) {
     console.warn("No se pudo obtener stock crítico:", err.message);

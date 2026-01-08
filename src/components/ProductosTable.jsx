@@ -8,13 +8,15 @@ export default function ProductosTable({
   loading,
   onDelete,
   onEdit,
+  nounSingular = "producto",
+  nounPlural = "productos",
 }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
-          <p className="text-gray-500">Cargando productos...</p>
+          <p className="text-gray-500">Cargando {nounPlural}...</p>
         </div>
       </div>
     );
@@ -27,10 +29,10 @@ export default function ProductosTable({
           <Package className="w-12 h-12 text-gray-400" />
         </div>
         <h3 className="text-lg font-semibold text-gray-700 mb-2">
-          No hay productos
+          No hay {nounPlural}
         </h3>
         <p className="text-gray-500 max-w-sm">
-          Comienza agregando tu primer producto al inventario
+          Comienza agregando tu primer {nounSingular} al inventario
         </p>
       </div>
     );
@@ -42,7 +44,7 @@ export default function ProductosTable({
         <thead>
           <tr className="border-b-2 border-gray-200">
             <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
-              Producto
+              {nounSingular}
             </th>
             <th className="p-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
               Compra
@@ -63,8 +65,62 @@ export default function ProductosTable({
           {products.map((p, i) => {
             const esPeso = p.tipo === "peso";
             const unidadStock = esPeso ? "kg" : "u";
-            const stockBajo = p.stock <= p.stockMinimo;
-            const stockMedio = p.stock <= p.stockMinimo * 2 && !stockBajo;
+            const hasVariants = Array.isArray(p.variants) && p.variants.length;
+
+            const toNumOrUndefined = (x) => {
+              if (x === undefined || x === null || x === "") return undefined;
+              const n = Number(x);
+              return Number.isFinite(n) ? n : undefined;
+            };
+
+            const getEffectivePrice = (variant, field, baseValue) => {
+              const override = toNumOrUndefined(variant?.[field]);
+              return override === undefined ? Number(baseValue || 0) : override;
+            };
+
+            const compraPrices = hasVariants
+              ? p.variants.map((v) =>
+                  getEffectivePrice(v, "precioCompra", p.precioCompra)
+                )
+              : [Number(p.precioCompra || 0)];
+
+            const variantsForVentaPrice = hasVariants
+              ? (() => {
+                  const conStock = p.variants.filter(
+                    (v) => Number(v?.stock || 0) > 0
+                  );
+                  return conStock.length ? conStock : p.variants;
+                })()
+              : [];
+
+            const ventaPrices = hasVariants
+              ? variantsForVentaPrice.map((v) =>
+                  getEffectivePrice(v, "precioVenta", p.precioVenta)
+                )
+              : [Number(p.precioVenta || 0)];
+
+            const compraMin = Math.min(...compraPrices);
+            const compraMax = Math.max(...compraPrices);
+            const ventaMin = Math.min(...ventaPrices);
+            const ventaMax = Math.max(...ventaPrices);
+
+            const compraVariante = hasVariants && compraMin !== compraMax;
+            const ventaVariante = hasVariants && ventaMin !== ventaMax;
+
+            const stockVisible = hasVariants
+              ? p.variants.reduce((acc, v) => acc + Number(v?.stock || 0), 0)
+              : Number(p.stock || 0);
+
+            const stockMinimoVisible = hasVariants
+              ? p.variants.reduce(
+                  (acc, v) => acc + Number(v?.stockMinimo || 0),
+                  0
+                )
+              : Number(p.stockMinimo || 0);
+
+            const stockBajo = stockVisible <= stockMinimoVisible;
+            const stockMedio =
+              stockVisible <= stockMinimoVisible * 2 && !stockBajo;
 
             return (
               <motion.tr
@@ -93,10 +149,13 @@ export default function ProductosTable({
                 <td className="p-4">
                   <div className="flex flex-col">
                     <span className="font-semibold text-gray-900">
-                      ${formatMoney(p.precioCompra)}
+                      ${formatMoney(compraMin)}
+                      {compraVariante ? ` - $${formatMoney(compraMax)}` : ""}
                     </span>
                     <span className="text-xs text-gray-500">
-                      Costo unitario
+                      {compraVariante
+                        ? "Costo (según variante)"
+                        : "Costo unitario"}
                     </span>
                   </div>
                 </td>
@@ -107,7 +166,8 @@ export default function ProductosTable({
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-green-600" />
                       <span className="font-semibold text-gray-900">
-                        ${formatMoney(p.precioVenta)}
+                        ${formatMoney(ventaMin)}
+                        {ventaVariante ? ` - $${formatMoney(ventaMax)}` : ""}
                       </span>
                       <span className="text-xs text-gray-500">
                         / {esPeso ? "kg" : "u"}
@@ -151,8 +211,8 @@ export default function ProductosTable({
                         }`}
                       >
                         {esPeso
-                          ? Number(p.stock).toFixed(3)
-                          : Number(p.stock).toFixed(0)}{" "}
+                          ? Number(stockVisible).toFixed(3)
+                          : Number(stockVisible).toFixed(0)}{" "}
                         {unidadStock}
                       </span>
                       {stockBajo && (

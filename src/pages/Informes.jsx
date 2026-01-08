@@ -27,8 +27,99 @@ import ColorfulBarChart from "@/components/informes/ColorfulBarChart";
 import TrendChart from "@/components/informes/TrendChart";
 import DataTable from "@/components/informes/DataTable";
 import DateRangeSelector from "@/components/informes/DateRangeSelector";
+import useAuthStore from "@/store/authStore";
 
 export default function Informes() {
+  const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
+
+  // Argentina está en UTC-3 (sin DST)
+  const ARGENTINA_OFFSET_MIN = -3 * 60;
+
+  const toFechaArgYYYYMMDD = (dateLike) => {
+    const d = new Date(dateLike);
+    if (Number.isNaN(d.getTime())) return null;
+    const utcTime = d.getTime() + d.getTimezoneOffset() * 60000;
+    const argTime = new Date(utcTime + ARGENTINA_OFFSET_MIN * 60000);
+
+    const year = argTime.getUTCFullYear();
+    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(argTime.getUTCDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const aggregateVentasPorDia = (ventas = []) => {
+    const map = new Map();
+
+    for (const v of Array.isArray(ventas) ? ventas : []) {
+      const fecha = toFechaArgYYYYMMDD(v?.fecha);
+      if (!fecha) continue;
+
+      const totalVenta = Number(v?.totalVenta ?? v?.totalVendido ?? 0);
+      const ganancia = Number(v?.gananciaTotal ?? v?.ganancia ?? 0);
+
+      const prev = map.get(fecha) ?? {
+        fecha,
+        totalVendido: 0,
+        ganancia: 0,
+        cantidadVentas: 0,
+      };
+
+      prev.totalVendido += Number.isFinite(totalVenta) ? totalVenta : 0;
+      prev.ganancia += Number.isFinite(ganancia) ? ganancia : 0;
+      prev.cantidadVentas += 1;
+
+      map.set(fecha, prev);
+    }
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.fecha.localeCompare(b.fecha)
+    );
+  };
+
+  const rangeDiasMes = ({ year, month, startDay, endDay, dailyMap }) => {
+    const mm = String(month).padStart(2, "0");
+    const out = [];
+
+    for (let d = startDay; d <= endDay; d += 1) {
+      const dd = String(d).padStart(2, "0");
+      const fecha = `${year}-${mm}-${dd}`;
+      out.push(
+        dailyMap.get(fecha) ?? {
+          fecha,
+          totalVendido: 0,
+          ganancia: 0,
+          cantidadVentas: 0,
+        }
+      );
+    }
+
+    return out;
+  };
+
+  const lastNDays = (endYYYYMMDD, n, dailyMap) => {
+    // Usamos el mediodía AR para evitar edge-cases de timezone.
+    const end = new Date(`${endYYYYMMDD}T12:00:00-03:00`);
+    const out = [];
+
+    for (let i = n - 1; i >= 0; i -= 1) {
+      const d = new Date(end);
+      d.setUTCDate(d.getUTCDate() - i);
+      const fecha = toFechaArgYYYYMMDD(d);
+      if (!fecha) continue;
+      out.push(
+        dailyMap.get(fecha) ?? {
+          fecha,
+          totalVendido: 0,
+          ganancia: 0,
+          cantidadVentas: 0,
+        }
+      );
+    }
+
+    return out;
+  };
+
   const hoy = hoyArg(); // Usar fecha Argentina
   const [selectedDate, setSelectedDate] = useState(hoy);
   const [tab, setTab] = useState("general");
@@ -57,12 +148,35 @@ export default function Informes() {
         fetchUltimos7Dias(),
       ]);
 
-      console.log("📊 Datos recibidos:", { d, m, g, u7 });
+      // Los endpoints /mensuales y /ultimos-7-dias devuelven ventas crudas.
+      // Para los gráficos, agregamos por día (Argentina) y rellenamos faltantes.
+      const mensualesAgg = aggregateVentasPorDia(m);
+      const mensualesMap = new Map(mensualesAgg.map((x) => [x.fecha, x]));
+      const startDay = Math.max(1, day - 14);
+      const mensualesLast15 = rangeDiasMes({
+        year,
+        month,
+        startDay,
+        endDay: day,
+        dailyMap: mensualesMap,
+      });
+
+      const u7Agg = aggregateVentasPorDia(u7);
+      const u7Map = new Map(u7Agg.map((x) => [x.fecha, x]));
+      const ultimos7Fill = lastNDays(hoy, 7, u7Map);
+
+      if (import.meta.env.DEV) {
+        console.log("📊 Datos recibidos (raw):", { d, m, g, u7 });
+        console.log("📈 Datos gráficos (normalizados):", {
+          ultimos7: ultimos7Fill,
+          mensuales: mensualesLast15,
+        });
+      }
 
       setDiarias(d);
-      setMensuales(m);
+      setMensuales(mensualesLast15);
       setGananciasState(g);
-      setUltimos7(u7);
+      setUltimos7(ultimos7Fill);
     } catch (error) {
       console.error("❌ Error cargando informes:", error);
     } finally {
@@ -86,7 +200,11 @@ export default function Informes() {
   const tabs = [
     { id: "general", label: "📊 General", icon: BarChart3 },
     { id: "ventas", label: "🛒 Ventas", icon: ShoppingCart },
-    { id: "productos", label: "📦 Productos", icon: Package },
+    {
+      id: "productos",
+      label: isApparel ? "👕 Variantes" : "📦 Productos",
+      icon: Package,
+    },
   ];
 
   return (
@@ -148,14 +266,18 @@ export default function Informes() {
           <StatCard
             title="Ganancia Mensual"
             value={`$${(ganancias.totalGanado ?? 0).toLocaleString()}`}
-            subtitle={`${ganancias.totalProductos ?? 0} productos vendidos`}
+            subtitle={`${ganancias.totalProductos ?? 0} ${
+              isApparel ? "variantes" : "productos"
+            } vendidos`}
             icon={Package}
             color="purple"
           />
           <StatCard
             title="Productos Vendidos"
             value={(ganancias.detalles ?? []).length}
-            subtitle="Productos diferentes"
+            subtitle={
+              isApparel ? "Variantes diferentes" : "Productos diferentes"
+            }
             icon={ShoppingCart}
             color="orange"
           />
@@ -191,8 +313,8 @@ export default function Informes() {
               />
 
               <ColorfulBarChart
-                data={mensuales.slice(0, 15)}
-                dataKey="totalDia"
+                data={mensuales}
+                dataKey="totalVendido"
                 title="📊 Ventas Mensuales (últimos 15 días)"
               />
             </>
@@ -293,14 +415,22 @@ export default function Informes() {
                       label: p.nombre,
                     }))}
                     dataKey="totalDia"
-                    title="🏆 Top 8 Productos por Ganancia"
+                    title={
+                      isApparel
+                        ? "🏆 Top 8 Variantes por Ganancia"
+                        : "🏆 Top 8 Productos por Ganancia"
+                    }
                   />
 
                   {/* Tabla detallada de productos */}
                   <DataTable
-                    title="📦 Ganancias por Producto (Este Mes)"
+                    title={
+                      isApparel
+                        ? "👕 Ganancias por Variante (Este Mes)"
+                        : "📦 Ganancias por Producto (Este Mes)"
+                    }
                     headers={[
-                      "Producto",
+                      isApparel ? "Variante" : "Producto",
                       "Cantidad Vendida",
                       "Ganancia Unitaria",
                       "Ganancia Total",

@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, Package, Info, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import useAuthStore from "@/store/authStore";
 
 export default function StockAlertCard({ productos = [] }) {
   const [showInfo, setShowInfo] = useState(false);
   const navigate = useNavigate();
+  const businessType = useAuthStore((s) => s.business?.businessType);
+  const isApparel = businessType === "apparel";
 
   const productosCriticos = productos.filter((p) => p.stock < p.stockMinimo);
   const productosAdvertencia = productos.filter(
@@ -27,7 +30,8 @@ export default function StockAlertCard({ productos = [] }) {
           <div>
             <h2 className="text-xl font-bold text-gray-800">Stock Crítico</h2>
             <p className="text-sm text-gray-500">
-              {productos.length} productos requieren atención
+              {productos.length} {isApparel ? "prendas" : "productos"} requieren
+              atención
             </p>
           </div>
         </div>
@@ -37,7 +41,7 @@ export default function StockAlertCard({ productos = [] }) {
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:shadow-lg transition-all"
         >
           <Package className="w-4 h-4" />
-          Ver Inventario
+          {isApparel ? "Ver Prendas" : "Ver Inventario"}
           <ExternalLink className="w-4 h-4" />
         </button>
       </div>
@@ -96,7 +100,8 @@ export default function StockAlertCard({ productos = [] }) {
         <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
           {productos.map((producto, idx) => {
             const esCritico = producto.stock < producto.stockMinimo;
-            const porcentaje = (producto.stock / producto.stockMinimo) * 100;
+            const minimo = Number(producto.stockMinimo || 0);
+            const porcentaje = minimo > 0 ? (producto.stock / minimo) * 100 : 0;
 
             return (
               <motion.div

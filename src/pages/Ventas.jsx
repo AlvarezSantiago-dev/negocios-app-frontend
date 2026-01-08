@@ -30,6 +30,7 @@ import useBarcodeScanner from "@/hooks/useBarcodeScanner";
 import ProductoFormModal from "../components/ProductoFormModal";
 import ModalIngresoPeso from "@/components/ModalIngresoPeso";
 import { formatMoney } from "@/services/dashboardService";
+import useAuthStore from "@/store/authStore";
 
 // Componente de Botón de Acción
 function ActionButton({
@@ -64,6 +65,7 @@ function ActionButton({
 }
 
 export default function Ventas() {
+  const businessType = useAuthStore((s) => s.business?.businessType);
   const [products, setProducts] = useState([]);
   const [filtro, setFiltro] = useState("");
   const [carrito, setCarrito] = useState([]);
@@ -114,11 +116,29 @@ export default function Ventas() {
       });
 
       if (result.isConfirmed) {
-        setInitialProductData({
-          codigoBarras: codigo,
-          tipo: "unitario",
-          categoria: "general",
-        });
+        setInitialProductData(
+          businessType === "apparel"
+            ? {
+                tipo: "unitario",
+                categoria: "general",
+                variants: [
+                  {
+                    talle: "",
+                    color: "",
+                    sku: "",
+                    codigoBarras: codigo,
+                    stock: 0,
+                    stockMinimo: 0,
+                    precioVenta: "",
+                  },
+                ],
+              }
+            : {
+                codigoBarras: codigo,
+                tipo: "unitario",
+                categoria: "general",
+              }
+        );
         setOpenModal(true);
       }
     }
@@ -129,6 +149,70 @@ export default function Ventas() {
   /* -------------------------------------------------- */
   /* CARRITO */
   /* -------------------------------------------------- */
+  const getVariantLabel = (v) => {
+    const talle = String(v?.talle || "").trim();
+    const color = String(v?.color || "").trim();
+    return [talle, color].filter(Boolean).join(" / ") || "Variante";
+  };
+
+  const getProductoStockVisible = (p) => {
+    const vars = Array.isArray(p?.variants) ? p.variants : null;
+    if (vars && vars.length > 0) {
+      return vars.reduce((acc, v) => acc + Number(v?.stock || 0), 0);
+    }
+    return Number(p?.stock || 0);
+  };
+
+  const getStockDisponible = (productoId, variantId = null) => {
+    const p = products.find((x) => x._id === productoId);
+    if (!p) return 0;
+    if (variantId) {
+      const v = (p.variants || []).find((vv) => vv._id === variantId);
+      return Number(v?.stock || 0);
+    }
+    return Number(p.stock || 0);
+  };
+
+  const getPrecioUnitario = (producto, variantId = null) => {
+    if (variantId) {
+      const v = (producto.variants || []).find((vv) => vv._id === variantId);
+      const pv = v?.precioVenta;
+      return pv === undefined || pv === null || pv === ""
+        ? producto.precioVenta
+        : pv;
+    }
+    return producto.precioVenta;
+  };
+
+  const getDefaultVariant = (producto) => {
+    if (
+      !producto ||
+      !Array.isArray(producto.variants) ||
+      !producto.variants.length
+    )
+      return null;
+
+    const matchedVariantId = producto?.matchedVariantId || null;
+    const matchedVariant = matchedVariantId
+      ? producto.variants.find((v) => v?._id === matchedVariantId)
+      : null;
+
+    return (
+      matchedVariant ||
+      producto.variants.find((v) => Number(v?.stock || 0) > 0) ||
+      producto.variants[0]
+    );
+  };
+
+  const getStockMinimoVisible = (producto) => {
+    if (!producto) return 0;
+    const vars = Array.isArray(producto?.variants) ? producto.variants : null;
+    if (vars && vars.length > 0) {
+      return vars.reduce((acc, v) => acc + Number(v?.stockMinimo || 0), 0);
+    }
+    return Number(producto?.stockMinimo || 0);
+  };
+
   const agregarAlCarrito = (producto) => {
     if (!producto) return;
 
@@ -138,12 +222,85 @@ export default function Ventas() {
       return;
     }
 
-    if (producto.stock <= 0) {
+    // Si es ropa con variantes, el stock se gestiona por variantes
+    const hasVariants =
+      businessType === "apparel" &&
+      Array.isArray(producto.variants) &&
+      producto.variants.length > 0;
+
+    const stockVisible = getProductoStockVisible(producto);
+
+    if (!hasVariants && producto.stock <= 0) {
       Swal.fire("Sin stock", "", "warning");
       return;
     }
 
-    // lógica de packs / unidades
+    if (hasVariants && stockVisible <= 0) {
+      Swal.fire("Sin stock", "", "warning");
+      return;
+    }
+
+    // lógica de packs / unidades / variantes
+    if (hasVariants) {
+      const matchedVariantId = producto?.matchedVariantId || null;
+      const matchedVariant = matchedVariantId
+        ? producto.variants.find((v) => v?._id === matchedVariantId)
+        : null;
+
+      const v0 =
+        matchedVariant ||
+        producto.variants.find((v) => Number(v?.stock || 0) > 0) ||
+        producto.variants[0];
+      const variantId = v0?._id;
+      const lineId = `${producto._id}:${variantId}`;
+      const existente = carrito.find((i) => i.lineId === lineId);
+
+      const stockVar = getStockDisponible(producto._id, variantId);
+      const precioUnitario = getPrecioUnitario(producto, variantId);
+      const variantLabel = getVariantLabel(v0);
+
+      if (matchedVariant && stockVar <= 0) {
+        Swal.fire("Sin stock", "", "warning");
+        return;
+      }
+
+      if (existente) {
+        const nuevaCantidad = existente.cantidad + 1;
+        if (nuevaCantidad > stockVar) {
+          Swal.fire("Stock insuficiente", "", "warning");
+          return;
+        }
+
+        setCarrito(
+          carrito.map((i) =>
+            i.lineId === lineId
+              ? {
+                  ...i,
+                  cantidad: nuevaCantidad,
+                  precioUnitarioAplicado: precioUnitario,
+                }
+              : i
+          )
+        );
+        return;
+      }
+
+      setCarrito([
+        ...carrito,
+        {
+          lineId,
+          productoId: producto._id,
+          variantId,
+          variantLabel,
+          nombre: producto.nombre,
+          cantidad: 1,
+          tipoVenta: "unidad",
+          precioUnitarioAplicado: precioUnitario,
+        },
+      ]);
+      return;
+    }
+
     const existente = carrito.find((i) => i.productoId === producto._id);
 
     if (existente) {
@@ -175,6 +332,7 @@ export default function Ventas() {
       setCarrito([
         ...carrito,
         {
+          lineId: producto._id,
           productoId: producto._id,
           nombre: producto.nombre,
           cantidad: 1,
@@ -191,13 +349,42 @@ export default function Ventas() {
   // (igual que tenías)
   // ------------------------------------------------------
   const actualizarCantidad = (productoId, nuevaCantidad) => {
-    if (nuevaCantidad < 1) return;
+    // compat: si se sigue llamando con productoId, usamos lineId=productoId
+    const lineId = String(productoId);
 
-    const producto = products.find((p) => p._id === productoId);
+    if (nuevaCantidad < 1) return;
+    const item = carrito.find(
+      (i) => i.lineId === lineId || i.productoId === lineId
+    );
+    if (!item) return;
+
+    const producto = products.find((p) => p._id === item.productoId);
     if (!producto) return;
 
-    if (nuevaCantidad > producto.stock) {
+    const hasVar = Boolean(item.variantId);
+    const stockDisp = hasVar
+      ? getStockDisponible(item.productoId, item.variantId)
+      : Number(producto.stock || 0);
+
+    if (nuevaCantidad > stockDisp) {
       Swal.fire("Stock insuficiente", "", "warning");
+      return;
+    }
+
+    if (hasVar) {
+      const precioUnitario = getPrecioUnitario(producto, item.variantId);
+      setCarrito(
+        carrito.map((i) =>
+          i.lineId === item.lineId
+            ? {
+                ...i,
+                cantidad: nuevaCantidad,
+                tipoVenta: "unidad",
+                precioUnitarioAplicado: precioUnitario,
+              }
+            : i
+        )
+      );
       return;
     }
 
@@ -208,7 +395,7 @@ export default function Ventas() {
 
     setCarrito(
       carrito.map((i) =>
-        i.productoId === productoId
+        i.productoId === item.productoId && !i.variantId
           ? {
               ...i,
               cantidad: nuevaCantidad,
@@ -220,8 +407,77 @@ export default function Ventas() {
     );
   };
 
+  const cambiarVariante = (lineId, newVariantId) => {
+    const item = carrito.find((i) => i.lineId === lineId);
+    if (!item) return;
+    const producto = products.find((p) => p._id === item.productoId);
+    if (!producto) return;
+    const v = (producto.variants || []).find((vv) => vv._id === newVariantId);
+    if (!v) return;
+
+    const stockDisp = Number(v.stock || 0);
+    if (stockDisp <= 0) {
+      Swal.fire("Sin stock", "", "warning");
+      return;
+    }
+    const precioUnitario = getPrecioUnitario(producto, newVariantId);
+    const variantLabel = getVariantLabel(v);
+
+    const nextLineId = `${item.productoId}:${newVariantId}`;
+
+    // si ya existe esa variante en el carrito, intentamos fusionar
+    const existente = carrito.find((x) => x.lineId === nextLineId);
+    if (existente && existente.lineId !== lineId) {
+      const nuevaCantidad =
+        Number(existente.cantidad || 0) + Number(item.cantidad || 0);
+      if (nuevaCantidad > stockDisp) {
+        Swal.fire("Stock insuficiente", "", "warning");
+        return;
+      }
+
+      setCarrito(
+        carrito
+          .filter((x) => x.lineId !== lineId)
+          .map((x) =>
+            x.lineId === nextLineId
+              ? {
+                  ...x,
+                  cantidad: nuevaCantidad,
+                  precioUnitarioAplicado: precioUnitario,
+                  variantLabel,
+                }
+              : x
+          )
+      );
+      return;
+    }
+
+    const clampedQty = Math.min(Number(item.cantidad || 1), stockDisp);
+
+    setCarrito(
+      carrito.map((x) =>
+        x.lineId === lineId
+          ? {
+              ...x,
+              lineId: nextLineId,
+              variantId: newVariantId,
+              variantLabel,
+              cantidad: clampedQty,
+              precioUnitarioAplicado: precioUnitario,
+              tipoVenta: "unidad",
+            }
+          : x
+      )
+    );
+  };
+
   const eliminarDelCarrito = (productoId) => {
-    setCarrito(carrito.filter((i) => i.productoId !== productoId));
+    setCarrito(
+      carrito.filter((i) => {
+        if (i.lineId) return i.lineId !== productoId;
+        return i.productoId !== productoId;
+      })
+    );
   };
 
   const total = carrito.reduce(
@@ -240,6 +496,7 @@ export default function Ventas() {
       items: carrito.map((i) => ({
         productoId: i.productoId,
         cantidad: i.cantidad,
+        ...(i.variantId ? { variantId: i.variantId } : {}),
       })),
     };
 
@@ -451,7 +708,52 @@ export default function Ventas() {
                   productosFiltrados.map((p, i) => {
                     const esPeso = p.tipo === "peso";
                     const unidadStock = esPeso ? "kg" : "u";
-                    const stockBajo = p.stock <= p.stockMinimo;
+                    const hasVariants =
+                      businessType === "apparel" &&
+                      Array.isArray(p.variants) &&
+                      p.variants.length > 0;
+                    const stockVisible = hasVariants
+                      ? getProductoStockVisible(p)
+                      : Number(p.stock || 0);
+                    const stockMinimoVisible = hasVariants
+                      ? getStockMinimoVisible(p)
+                      : Number(p.stockMinimo || 0);
+                    const stockBajo = hasVariants
+                      ? stockVisible <= stockMinimoVisible
+                      : Number(p.stock || 0) <= stockMinimoVisible;
+                    const disabledAgregar =
+                      p.tipo !== "peso" &&
+                      (hasVariants
+                        ? stockVisible <= 0
+                        : Number(p.stock || 0) <= 0);
+
+                    const buildPrecioLabel = () => {
+                      if (!hasVariants) {
+                        return `$${formatMoney(p.precioVenta)}`;
+                      }
+
+                      const precios = (p.variants || []).map((v) => {
+                        const pv = v?.precioVenta;
+                        const eff =
+                          pv === undefined || pv === null || pv === ""
+                            ? p.precioVenta
+                            : pv;
+                        return Number(eff || 0);
+                      });
+
+                      const min = Math.min(...precios);
+                      const max = Math.max(...precios);
+
+                      if (!Number.isFinite(min) || !Number.isFinite(max)) {
+                        return `$${formatMoney(p.precioVenta)}`;
+                      }
+
+                      return min === max
+                        ? `$${formatMoney(min)}`
+                        : `$${formatMoney(min)} - $${formatMoney(max)}`;
+                    };
+
+                    const precioLabel = buildPrecioLabel();
 
                     return (
                       <motion.div
@@ -467,7 +769,7 @@ export default function Ventas() {
                           </p>
                           <div className="flex items-center gap-3 text-sm">
                             <span className="font-semibold text-green-600">
-                              ${formatMoney(p.precioVenta)}
+                              {precioLabel}
                             </span>
                             <span className="text-gray-500">•</span>
                             <span
@@ -478,7 +780,7 @@ export default function Ventas() {
                               Stock:{" "}
                               {esPeso
                                 ? Number(p.stock).toFixed(3)
-                                : Number(p.stock).toFixed(0)}{" "}
+                                : Number(stockVisible).toFixed(0)}{" "}
                               {unidadStock}
                             </span>
                           </div>
@@ -488,7 +790,7 @@ export default function Ventas() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => agregarAlCarrito(p)}
-                          disabled={p.stock <= 0 && p.tipo !== "peso"}
+                          disabled={disabledAgregar}
                           className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                           <Plus className="w-5 h-5" />
@@ -534,73 +836,128 @@ export default function Ventas() {
                 <div className="space-y-3">
                   {carrito.map((i) => (
                     <motion.div
-                      key={i.productoId}
+                      key={i.lineId || i.productoId}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       className="border border-gray-200 rounded-xl p-4 bg-gradient-to-r from-white to-gray-50"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900 mb-1">
-                            {i.nombre}
-                          </p>
-                          {i.tipoVenta === "pack" && (
-                            <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                              Pack aplicado
-                            </span>
-                          )}
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => eliminarDelCarrito(i.productoId)}
-                          className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </motion.button>
-                      </div>
+                      {(() => {
+                        const producto = products.find(
+                          (p) => p._id === i.productoId
+                        );
+                        const canSelectVariant =
+                          businessType === "apparel" &&
+                          Boolean(i.variantId) &&
+                          Boolean(i.lineId) &&
+                          Array.isArray(producto?.variants) &&
+                          producto.variants.length > 0;
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() =>
-                              actualizarCantidad(i.productoId, i.cantidad - 1)
-                            }
-                            className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </motion.button>
-                          <Input
-                            type="number"
-                            value={i.cantidad}
-                            onChange={(e) =>
-                              actualizarCantidad(
-                                i.productoId,
-                                Number(e.target.value)
-                              )
-                            }
-                            className="w-20 text-center font-semibold"
-                            min="1"
-                          />
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() =>
-                              actualizarCantidad(i.productoId, i.cantidad + 1)
-                            }
-                            className="p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </motion.button>
-                        </div>
+                        return (
+                          <>
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-900 mb-1">
+                                  {i.nombre}
+                                </p>
+                                {i.variantId && (
+                                  <p className="text-sm text-gray-600">
+                                    {i.variantLabel || "Variante"}
+                                  </p>
+                                )}
+                                {i.tipoVenta === "pack" && (
+                                  <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                    Pack aplicado
+                                  </span>
+                                )}
 
-                        <p className="text-xl font-bold text-gray-900">
-                          ${formatMoney(i.precioUnitarioAplicado * i.cantidad)}
-                        </p>
-                      </div>
+                                {canSelectVariant && (
+                                  <div className="mt-2 max-w-xs">
+                                    <Select
+                                      value={i.variantId}
+                                      onValueChange={(vId) =>
+                                        cambiarVariante(i.lineId, vId)
+                                      }
+                                    >
+                                      <SelectTrigger className="bg-white border-gray-300 rounded-xl h-9">
+                                        <SelectValue placeholder="Variante" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {producto.variants.map((v) => (
+                                          <SelectItem key={v._id} value={v._id}>
+                                            {getVariantLabel(v)} (stock:{" "}
+                                            {Number(v.stock || 0)})
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                )}
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() =>
+                                  eliminarDelCarrito(i.lineId || i.productoId)
+                                }
+                                className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </motion.button>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() =>
+                                    actualizarCantidad(
+                                      i.lineId || i.productoId,
+                                      i.cantidad - 1
+                                    )
+                                  }
+                                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </motion.button>
+                                <Input
+                                  type="number"
+                                  value={i.cantidad}
+                                  onChange={(e) =>
+                                    actualizarCantidad(
+                                      i.lineId || i.productoId,
+                                      Number(e.target.value)
+                                    )
+                                  }
+                                  className="w-20 text-center font-semibold"
+                                  min="1"
+                                />
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() =>
+                                    actualizarCantidad(
+                                      i.lineId || i.productoId,
+                                      i.cantidad + 1
+                                    )
+                                  }
+                                  className="p-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </motion.button>
+                              </div>
+
+                              <p className="text-xl font-bold text-gray-900">
+                                $
+                                {formatMoney(
+                                  i.precioUnitarioAplicado * i.cantidad
+                                )}
+                              </p>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </motion.div>
                   ))}
                 </div>
