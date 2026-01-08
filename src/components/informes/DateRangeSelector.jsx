@@ -2,61 +2,51 @@ import React from "react";
 import { Calendar } from "lucide-react";
 import { hoyArg } from "@/utils/fecha";
 
+// Argentina está en UTC-3
+const ARGENTINA_OFFSET = -3 * 60; // -180 minutos
+
 export default function DateRangeSelector({ selectedDate, onDateChange }) {
   const today = hoyArg(); // Usar fecha Argentina
 
   // Calcular ayer en timezone Argentina
   function getYesterday() {
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Argentina/Buenos_Aires",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-
-    const ayer = new Date();
-    ayer.setDate(ayer.getDate() - 1);
-
-    const parts = formatter.formatToParts(ayer);
-    const year = parts.find((p) => p.type === "year").value;
-    const month = parts.find((p) => p.type === "month").value;
-    const day = parts.find((p) => p.type === "day").value;
-
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+    argTime.setUTCDate(argTime.getUTCDate() - 1);
+    
+    const year = argTime.getUTCFullYear();
+    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(argTime.getUTCDate()).padStart(2, "0");
+    
     return `${year}-${month}-${day}`;
   }
 
   // Calcular hace 7 días en timezone Argentina
   function getLastWeek() {
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Argentina/Buenos_Aires",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-
-    const hace7 = new Date();
-    hace7.setDate(hace7.getDate() - 7);
-
-    const parts = formatter.formatToParts(hace7);
-    const year = parts.find((p) => p.type === "year").value;
-    const month = parts.find((p) => p.type === "month").value;
-    const day = parts.find((p) => p.type === "day").value;
-
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+    argTime.setUTCDate(argTime.getUTCDate() - 7);
+    
+    const year = argTime.getUTCFullYear();
+    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(argTime.getUTCDate()).padStart(2, "0");
+    
     return `${year}-${month}-${day}`;
   }
 
   // Primer día del mes en timezone Argentina
   const firstDayOfMonth = (() => {
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Argentina/Buenos_Aires",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-
-    const parts = formatter.formatToParts(new Date());
-    const year = parts.find((p) => p.type === "year").value;
-    const month = parts.find((p) => p.type === "month").value;
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+    
+    const year = argTime.getUTCFullYear();
+    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
+    
+    return `${year}-${month}-01`;
+  })();
 
     return `${year}-${month}-01`;
   })();

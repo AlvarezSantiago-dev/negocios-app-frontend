@@ -1,67 +1,52 @@
 // src/utils/fecha.js
+
+// Argentina está en UTC-3 (sin horario de verano desde 2009)
+const ARGENTINA_OFFSET = -3 * 60; // -180 minutos
+
 export const hoyArg = () => {
-  // Obtener la fecha en Argentina sin conversión a UTC
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const parts = formatter.formatToParts(new Date());
-  const year = parts.find((p) => p.type === "year").value;
-  const month = parts.find((p) => p.type === "month").value;
-  const day = parts.find((p) => p.type === "day").value;
-
+  // Obtener timestamp actual y ajustar a Argentina
+  const now = new Date();
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+  
+  const year = argTime.getUTCFullYear();
+  const month = String(argTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(argTime.getUTCDate()).padStart(2, '0');
+  
   return `${year}-${month}-${day}`; // YYYY-MM-DD
 };
 
 export const ahoraArgISO = () => {
   // Obtener fecha y hora actual en Argentina en formato ISO para input datetime-local
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(new Date());
-  const year = parts.find((p) => p.type === "year").value;
-  const month = parts.find((p) => p.type === "month").value;
-  const day = parts.find((p) => p.type === "day").value;
-  const hour = parts.find((p) => p.type === "hour").value;
-  const minute = parts.find((p) => p.type === "minute").value;
+  const now = new Date();
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+  
+  const year = argTime.getUTCFullYear();
+  const month = String(argTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(argTime.getUTCDate()).padStart(2, '0');
+  const hour = String(argTime.getUTCHours()).padStart(2, '0');
+  const minute = String(argTime.getUTCMinutes()).padStart(2, '0');
 
   return `${year}-${month}-${day}T${hour}:${minute}`; // YYYY-MM-DDTHH:MM
 };
 
 export const fechaCompletaArg = () => {
   // Obtener fecha y hora actual en Argentina
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Argentina/Buenos_Aires",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(new Date());
-  const year = parts.find((p) => p.type === "year").value;
-  const month = parts.find((p) => p.type === "month").value;
-  const day = parts.find((p) => p.type === "day").value;
-  const hour = parts.find((p) => p.type === "hour").value;
-  const minute = parts.find((p) => p.type === "minute").value;
-  const second = parts.find((p) => p.type === "second").value;
-
+  const now = new Date();
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const argTime = new Date(utcTime + (ARGENTINA_OFFSET * 60000));
+  
+  const year = argTime.getUTCFullYear();
+  const month = String(argTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(argTime.getUTCDate()).padStart(2, '0');
+  const hour = String(argTime.getUTCHours()).padStart(2, '0');
+  const minute = String(argTime.getUTCMinutes()).padStart(2, '0');
+  const second = String(argTime.getUTCSeconds()).padStart(2, '0');
+  
   // Crear string ISO con timezone Argentina explícito
   const isoString = `${year}-${month}-${day}T${hour}:${minute}:${second}.000-03:00`;
-
+  
   // Retornar Date object
   return new Date(isoString);
 };
