@@ -33,13 +33,19 @@ export default function HistorialCierres() {
     })();
   }, []);
 
-  const formatFecha = (f) =>
-    new Date(f).toLocaleDateString("es-AR", {
+  const formatFecha = (f) => {
+    // Parsear la fecha asumiendo timezone Argentina
+    const fecha = new Date(f);
+
+    // Formatear con timezone Argentina explícito
+    return fecha.toLocaleDateString("es-AR", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
+      timeZone: "America/Argentina/Buenos_Aires",
     });
+  };
 
   if (loading) {
     return (

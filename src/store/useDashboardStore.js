@@ -6,6 +6,7 @@ import {
   fetchCajaMovimientos,
 } from "../services/dashboardService";
 import { fetchCajaResumen } from "../services/cajaService";
+import { hoyArg } from "../utils/fecha";
 
 const useDashboardStore = create((set, get) => ({
   ventasHoy: [],
@@ -19,15 +20,12 @@ const useDashboardStore = create((set, get) => ({
   fetchDashboard: async () => {
     set({ loading: true });
     try {
-      const fechaISO = new Date().toISOString().split("T")[0];
+      const fechaISO = hoyArg();
+      const [year, month, day] = fechaISO.split("-").map(Number);
       const [ventas, ganancias, critico, resumenCaja, movs] = await Promise.all(
         [
           fetchVentasHoy(fechaISO),
-          fetchGanancias(
-            new Date().getFullYear(),
-            new Date().getMonth() + 1,
-            new Date().getDate()
-          ),
+          fetchGanancias(year, month, day),
           fetchStockCritico(),
           fetchCajaResumen(),
           fetchCajaMovimientos(5),
@@ -71,13 +69,10 @@ const useDashboardStore = create((set, get) => ({
   // 🔹 Actualizar ventas y ganancias
   actualizarVentas: async () => {
     try {
-      const fechaISO = new Date().toISOString().split("T")[0];
+      const fechaISO = hoyArg();
+      const [year, month, day] = fechaISO.split("-").map(Number);
       const ventas = await fetchVentasHoy(fechaISO);
-      const ganancias = await fetchGanancias(
-        new Date().getFullYear(),
-        new Date().getMonth() + 1,
-        new Date().getDate()
-      );
+      const ganancias = await fetchGanancias(year, month, day);
       set({ ventasHoy: ventas, ganHoy: ganancias.totalGanado ?? 0 });
     } catch (err) {
       console.error("Error actualizarVentas:", err);

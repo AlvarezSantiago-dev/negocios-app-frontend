@@ -1,15 +1,65 @@
 import React from "react";
 import { Calendar } from "lucide-react";
+import { hoyArg } from "@/utils/fecha";
 
 export default function DateRangeSelector({ selectedDate, onDateChange }) {
-  const today = new Date().toISOString().split("T")[0];
-  const firstDayOfMonth = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    1
-  )
-    .toISOString()
-    .split("T")[0];
+  const today = hoyArg(); // Usar fecha Argentina
+
+  // Calcular ayer en timezone Argentina
+  function getYesterday() {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+
+    const parts = formatter.formatToParts(ayer);
+    const year = parts.find((p) => p.type === "year").value;
+    const month = parts.find((p) => p.type === "month").value;
+    const day = parts.find((p) => p.type === "day").value;
+
+    return `${year}-${month}-${day}`;
+  }
+
+  // Calcular hace 7 días en timezone Argentina
+  function getLastWeek() {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const hace7 = new Date();
+    hace7.setDate(hace7.getDate() - 7);
+
+    const parts = formatter.formatToParts(hace7);
+    const year = parts.find((p) => p.type === "year").value;
+    const month = parts.find((p) => p.type === "month").value;
+    const day = parts.find((p) => p.type === "day").value;
+
+    return `${year}-${month}-${day}`;
+  }
+
+  // Primer día del mes en timezone Argentina
+  const firstDayOfMonth = (() => {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    const parts = formatter.formatToParts(new Date());
+    const year = parts.find((p) => p.type === "year").value;
+    const month = parts.find((p) => p.type === "month").value;
+
+    return `${year}-${month}-01`;
+  })();
 
   const presets = [
     { label: "Hoy", value: today },
@@ -17,18 +67,6 @@ export default function DateRangeSelector({ selectedDate, onDateChange }) {
     { label: "Última semana", value: getLastWeek() },
     { label: "Este mes", value: firstDayOfMonth },
   ];
-
-  function getYesterday() {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split("T")[0];
-  }
-
-  function getLastWeek() {
-    const lastWeek = new Date();
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    return lastWeek.toISOString().split("T")[0];
-  }
 
   return (
     <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">

@@ -19,6 +19,7 @@ import {
   Award,
   AlertCircle,
 } from "lucide-react";
+import { hoyArg } from "@/utils/fecha";
 
 // Componentes nuevos
 import StatCard from "@/components/informes/StatCard";
@@ -28,10 +29,7 @@ import DataTable from "@/components/informes/DataTable";
 import DateRangeSelector from "@/components/informes/DateRangeSelector";
 
 export default function Informes() {
-  const hoy = new Date().toISOString().substring(0, 10);
-  const year = new Date().getFullYear();
-  const month = new Date().getMonth() + 1;
-
+  const hoy = hoyArg(); // Usar fecha Argentina
   const [selectedDate, setSelectedDate] = useState(hoy);
   const [tab, setTab] = useState("general");
   const [diarias, setDiarias] = useState([]);
@@ -48,11 +46,14 @@ export default function Informes() {
   async function cargar() {
     setLoading(true);
 
+    // Extraer year, month, day de la fecha seleccionada
+    const [year, month, day] = selectedDate.split("-").map(Number);
+
     try {
       const [d, m, g, u7] = await Promise.all([
         fetchVentasDiarias(selectedDate),
         fetchVentasMensuales(year, month),
-        fetchGanancias(year, month),
+        fetchGanancias(year, month, day), // ✅ Pasar el día también
         fetchUltimos7Dias(),
       ]);
 

@@ -1,4 +1,6 @@
 // src/services/cajaService.js
+import { hoyArg } from "@/utils/fecha";
+
 const API_CAJA = `${import.meta.env.VITE_API_URL}/caja`;
 
 // Helper con credentials
@@ -13,7 +15,7 @@ async function apiGet(url) {
 
 // --- RESUMEN DE CAJA ---
 export async function fetchCajaResumen() {
-  const hoyISO = new Date().toISOString().split("T")[0];
+  const hoyISO = hoyArg();
   const res = await fetch(
     `${API_CAJA}/resumen?desde=${hoyISO}&hasta=${hoyISO}`,
     { credentials: "include" }

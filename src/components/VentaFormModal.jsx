@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useEffect, useMemo, useState } from "react";
+import { ahoraArgISO } from "@/utils/fecha";
 
 /**
  * Props:
@@ -53,13 +54,13 @@ export default function VentaFormModal({ open, onClose, onSave, initialData }) {
       setFecha(
         initialData.fecha
           ? new Date(initialData.fecha).toISOString().slice(0, 16)
-          : new Date().toISOString().slice(0, 16)
+          : ahoraArgISO()
       );
       setErrors({});
     } else {
       setItems([]);
       setMetodoPago("efectivo");
-      setFecha(new Date().toISOString().slice(0, 16));
+      setFecha(ahoraArgISO());
       setErrors({});
     }
   }, [initialData, open]);
