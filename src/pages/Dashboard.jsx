@@ -44,15 +44,15 @@ export default function Dashboard() {
   const cargarDashboard = async () => {
     setLoading(true);
     const fechaISO = hoyArg();
+    const [yearStr, monthStr, dayStr] = String(fechaISO).split("-");
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
 
     try {
       const [ventasData, ganancias, stock] = await Promise.all([
         fetchVentasHoy(fechaISO),
-        fetchGanancias(
-          new Date().getFullYear(),
-          new Date().getMonth() + 1,
-          new Date().getDate()
-        ),
+        fetchGanancias(year, month, day),
         fetchStockCritico(),
       ]);
 
@@ -111,6 +111,7 @@ export default function Dashboard() {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 
   const hayStockBajo = stockCritico.length > 0;

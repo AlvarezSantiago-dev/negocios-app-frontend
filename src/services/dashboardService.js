@@ -1,13 +1,11 @@
 // src/services/dashboardService.js
+import { hoyArg } from "../utils/fecha.js";
+
 const API_CAJA = `${import.meta.env.VITE_API_URL}/caja`;
 const API_VENTAS = `${import.meta.env.VITE_API_URL}/ventas`;
 
 export function getFechaLocalYYYYMMDD() {
-  const ahora = new Date();
-  const año = ahora.getFullYear();
-  const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-  const dia = String(ahora.getDate()).padStart(2, "0");
-  return `${año}-${mes}-${dia}`;
+  return hoyArg();
 }
 
 async function apiGet(url) {
