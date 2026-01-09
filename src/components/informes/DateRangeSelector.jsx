@@ -1,50 +1,30 @@
 import React from "react";
 import { Calendar } from "lucide-react";
-import { hoyArg } from "@/utils/fecha";
-
-// Argentina está en UTC-3
-const ARGENTINA_OFFSET = -3 * 60; // -180 minutos
+import { hoyArg, toFechaArgYYYYMMDD } from "@/utils/fecha";
 
 export default function DateRangeSelector({ selectedDate, onDateChange }) {
   const today = hoyArg(); // Usar fecha Argentina
 
+  const addDaysFromYYYYMMDD = (ymd, deltaDays) => {
+    // Mediodía AR para evitar edge-cases de timezone
+    const base = new Date(`${ymd}T12:00:00-03:00`);
+    base.setUTCDate(base.getUTCDate() + deltaDays);
+    return toFechaArgYYYYMMDD(base);
+  };
+
   // Calcular ayer en timezone Argentina
   function getYesterday() {
-    const now = new Date();
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    const argTime = new Date(utcTime + ARGENTINA_OFFSET * 60000);
-    argTime.setUTCDate(argTime.getUTCDate() - 1);
-
-    const year = argTime.getUTCFullYear();
-    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(argTime.getUTCDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return addDaysFromYYYYMMDD(today, -1);
   }
 
   // Calcular hace 7 días en timezone Argentina
   function getLastWeek() {
-    const now = new Date();
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    const argTime = new Date(utcTime + ARGENTINA_OFFSET * 60000);
-    argTime.setUTCDate(argTime.getUTCDate() - 7);
-
-    const year = argTime.getUTCFullYear();
-    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(argTime.getUTCDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    return addDaysFromYYYYMMDD(today, -7);
   }
 
   // Primer día del mes en timezone Argentina
   const firstDayOfMonth = (() => {
-    const now = new Date();
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    const argTime = new Date(utcTime + ARGENTINA_OFFSET * 60000);
-
-    const year = argTime.getUTCFullYear();
-    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
-
+    const [year, month] = String(today).split("-");
     return `${year}-${month}-01`;
   })();
 

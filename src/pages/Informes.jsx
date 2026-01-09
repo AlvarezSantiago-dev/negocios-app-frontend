@@ -19,7 +19,7 @@ import {
   Award,
   AlertCircle,
 } from "lucide-react";
-import { hoyArg } from "@/utils/fecha";
+import { hoyArg, toFechaArgYYYYMMDD } from "@/utils/fecha";
 
 // Componentes nuevos
 import StatCard from "@/components/informes/StatCard";
@@ -32,21 +32,6 @@ import useAuthStore from "@/store/authStore";
 export default function Informes() {
   const businessType = useAuthStore((s) => s.business?.businessType);
   const isApparel = businessType === "apparel";
-
-  // Argentina está en UTC-3 (sin DST)
-  const ARGENTINA_OFFSET_MIN = -3 * 60;
-
-  const toFechaArgYYYYMMDD = (dateLike) => {
-    const d = new Date(dateLike);
-    if (Number.isNaN(d.getTime())) return null;
-    const utcTime = d.getTime() + d.getTimezoneOffset() * 60000;
-    const argTime = new Date(utcTime + ARGENTINA_OFFSET_MIN * 60000);
-
-    const year = argTime.getUTCFullYear();
-    const month = String(argTime.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(argTime.getUTCDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
 
   const aggregateVentasPorDia = (ventas = []) => {
     const map = new Map();
